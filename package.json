@@ -1,0 +1,30 @@
+{
+    "name": "kool-craft-launcher",
+    "private": true,
+    "version": "0.1.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vue-tsc --noEmit && vite build",
+        "format": "prettier --write \"src/**/*.{js,ts,vue,json,css,md}\"",
+        "preview": "vite preview",
+        "tauri": "tauri",
+        "tauri:dev": "tauri dev"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "^2",
+        "@tauri-apps/plugin-log": "~2",
+        "@tauri-apps/plugin-opener": "^2",
+        "pinia": "^3.0.4",
+        "vue": "^3.5.13"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2",
+        "@types/node": "^24.10.1",
+        "@vitejs/plugin-vue": "^5.2.1",
+        "prettier": "^3.6.2",
+        "typescript": "~5.6.2",
+        "vite": "^6.0.3",
+        "vue-tsc": "^2.1.10"
+    }
+}

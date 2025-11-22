@@ -1,0 +1,43 @@
+mod theme;
+
+use crate::theme::commands::register_theme_commands;
+use crate::theme::config::{EffectMode, ThemeConfig};
+use crate::theme::utils::apply_effect;
+use std::error::Error;
+use log::info;
+use tap::Pipe;
+use tauri::{App, Manager, Runtime};
+use tauri::plugin::TauriPlugin;
+
+pub fn run() {
+    info!("App started at {:?}", std::time::SystemTime::now());
+    tauri::Builder::default()
+        .plugin(log_plugin())
+        .setup(setup_app)
+        .pipe(register_theme_commands)
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
+    tauri_plugin_log::Builder::default()
+        .level(log::LevelFilter::Info)
+        .max_file_size(5_000_000 /* bytes */)
+        .build()
+}
+
+fn setup_app(app: &mut App) -> Result<(), Box<dyn Error>> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+
+    let config = ThemeConfig::load();
+    apply_effect(&window, &config);
+    config.save();
+
+    if matches!(config.effect, EffectMode::Auto | EffectMode::Mica) {
+        window.show()?;
+    }
+
+    Ok(())
+}
