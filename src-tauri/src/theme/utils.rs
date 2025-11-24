@@ -1,9 +1,9 @@
-use crate::theme::config::{EffectMode, ThemeConfig, ThemeMode};
 use tauri::{Runtime, Theme, WebviewWindow};
-#[cfg(target_os = "macos")]
-use window_vibrancy::{NSVisualEffectMaterial, apply_vibrancy as apply_vibrancy_internal};
 #[cfg(target_os = "windows")]
 use window_vibrancy::{apply_mica as apply_mica_internal, clear_mica};
+#[cfg(target_os = "macos")]
+use window_vibrancy::{apply_vibrancy as apply_vibrancy_internal, NSVisualEffectMaterial};
+use crate::theme::model::{EffectMode, ThemeConfig, ThemeMode};
 
 #[cfg(target_os = "macos")]
 fn apply_vibrancy<R: Runtime>(window: &WebviewWindow<R>, is_dark: bool) {

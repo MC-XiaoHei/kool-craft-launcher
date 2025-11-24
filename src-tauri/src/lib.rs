@@ -1,13 +1,13 @@
 mod theme;
 
 use crate::theme::commands::register_theme_commands;
-use crate::theme::config::{EffectMode, ThemeConfig};
 use crate::theme::utils::apply_effect;
-use std::error::Error;
 use log::info;
+use std::error::Error;
 use tap::Pipe;
-use tauri::{App, Manager, Runtime};
 use tauri::plugin::TauriPlugin;
+use tauri::{App, Manager, Runtime};
+use theme::model::{EffectMode, ThemeConfig};
 
 pub fn run() {
     info!("App started at {:?}", std::time::SystemTime::now());
@@ -23,6 +23,20 @@ fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
     tauri_plugin_log::Builder::default()
         .level(log::LevelFilter::Info)
         .max_file_size(5_000_000 /* bytes */)
+        .format(|out, message, record| {
+            let full_target = record.target();
+
+            let display_target = full_target
+                .strip_prefix("kool_craft_launcher_lib::")
+                .unwrap_or(full_target);
+
+            out.finish(format_args!(
+                "[{}] [{}] {}",
+                record.level(),
+                display_target,
+                message
+            ))
+        })
         .build()
 }
 

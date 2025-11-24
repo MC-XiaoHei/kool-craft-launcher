@@ -1,13 +1,13 @@
-use crate::theme::config::ThemeConfig;
+use crate::theme::model::ThemeConfig;
 use crate::theme::utils::apply_effect;
 use anyhow::Context;
-use base64::Engine;
 use base64::engine::general_purpose;
+use base64::Engine;
 use image::{ImageFormat, ImageReader};
 use log::{error, info};
 use std::io::Cursor;
 use std::time::Instant;
-use tauri::{Builder, Runtime, WebviewWindow, command};
+use tauri::{command, Builder, Runtime, WebviewWindow};
 
 pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
     builder.invoke_handler(tauri::generate_handler![

@@ -1,7 +1,7 @@
-use anyhow::{Context, Result, anyhow};
-use log::{error, info, warn};
 use std::fs;
 use std::path::PathBuf;
+use anyhow::{anyhow, Context};
+use log::{error, info, warn};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub enum EffectMode {
@@ -37,7 +37,7 @@ const CONFIG_DIR: &str = ".kcl";
 const CONFIG_FILE: &str = "theme.json";
 
 impl ThemeConfig {
-    fn config_path() -> Result<PathBuf> {
+    fn config_path() -> anyhow::Result<PathBuf> {
         dirs::home_dir()
             .map(|h| h.join(CONFIG_DIR).join(CONFIG_FILE))
             .ok_or_else(|| anyhow!("Unable to determine user home directory"))
@@ -57,7 +57,7 @@ impl ThemeConfig {
         }
     }
 
-    fn try_load() -> Result<Option<Self>> {
+    fn try_load() -> anyhow::Result<Option<Self>> {
         let path = Self::config_path()?;
 
         if !path.exists() {
@@ -73,7 +73,7 @@ impl ThemeConfig {
         Ok(Some(config))
     }
 
-    fn try_save(&self) -> Result<()> {
+    fn try_save(&self) -> anyhow::Result<()> {
         let path = Self::config_path()?;
 
         if let Some(parent) = path.parent() {
