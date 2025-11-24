@@ -1,4 +1,5 @@
 mod theme;
+mod scheduler;
 
 use crate::theme::commands::register_theme_commands;
 use crate::theme::utils::apply_effect;
