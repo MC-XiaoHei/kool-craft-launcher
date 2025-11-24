@@ -1,30 +1,39 @@
 {
-    "name": "kool-craft-launcher",
-    "private": true,
-    "version": "0.1.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vue-tsc --noEmit && vite build",
-        "format": "prettier --write \"src/**/*.{js,ts,vue,json,css,md}\"",
-        "preview": "vite preview",
-        "tauri": "tauri",
-        "tauri:dev": "tauri dev"
-    },
-    "dependencies": {
-        "@tauri-apps/api": "^2",
-        "@tauri-apps/plugin-log": "~2",
-        "@tauri-apps/plugin-opener": "^2",
-        "pinia": "^3.0.4",
-        "vue": "^3.5.13"
-    },
-    "devDependencies": {
-        "@tauri-apps/cli": "^2",
-        "@types/node": "^24.10.1",
-        "@vitejs/plugin-vue": "^5.2.1",
-        "prettier": "^3.6.2",
-        "typescript": "~5.6.2",
-        "vite": "^6.0.3",
-        "vue-tsc": "^2.1.10"
-    }
+  "name": "kool-craft-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "identifier": "cn.xor7.kcl",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm sync-metadata && pnpm tauri:dev",
+    "build": "pnpm tauri:build",
+    "frontend:dev": "vite",
+    "frontend:build": "vue-tsc --noEmit && vite build",
+    "frontend:format": "prettier --write \"src/**/*.{js,ts,vue,json,css,md}\"",
+    "tauri": "tauri",
+    "tauri:icon": "tauri icon public/app-icon.svg",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "sync-metadata": "node sync-metadata.cjs",
+    "postinstall": "pnpm tauri:icon",
+    "prestart": "pnpm sync-metadata",
+    "prebuild": "pnpm sync-metadata",
+    "postversion": "pnpm sync-metadata"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-log": "~2",
+    "@tauri-apps/plugin-opener": "^2",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "prettier": "^3.6.2",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  }
 }

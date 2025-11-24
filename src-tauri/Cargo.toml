@@ -1,9 +1,34 @@
 [package]
 name = "kool-craft-launcher"
-version = "0.0.0"
-description = ""
-authors = ["MC_XiaoHei"]
+version = "1.0.0"
 edition = "2024"
+
+[dependencies]
+# common dependencies
+anyhow = "1.0"
+async-trait = "0.1"
+dashmap = "6.1"
+dirs = "6.0"
+futures = "0.3"
+futures-util = "0.3"
+log = "0.4"
+os_info = "3.7"
+reqwest = { version = "0.12", features = ["stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tap = "1.0"
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# tauri dependencies
+tauri = { version = "2.9", features = [] }
+tauri-plugin-log = "2.7"
+
+# theme dependencies
+base64 = "0.22"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+window-vibrancy = "0.7.1"
+wallpaper = "3.2"
 
 [lib]
 name = "kool_craft_launcher_lib"
@@ -11,19 +36,3 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2.5", features = [] }
-
-[dependencies]
-tauri = { version = "2.9", features = [] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-window-vibrancy = "0.7.1"
-os_info = "3.7"
-wallpaper = "3.2"
-log = "0.4"
-image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
-base64 = "0.22"
-dirs = "6.0"
-anyhow = "1.0"
-tap = "1.0"
-tauri-plugin-log = "2.7"
