@@ -262,6 +262,7 @@ where
             let input = input.clone();
             let ctx = Context {
                 race_ctx: Some(race_ctx.clone()),
+                parent_id: Some(self.id),
                 ..ctx.clone()
             };
             futures.push(Box::pin(async move { task.run(input, ctx).await }));

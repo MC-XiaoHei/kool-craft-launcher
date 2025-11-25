@@ -53,13 +53,6 @@ impl Context {
     pub async fn acquire_permit(&self) -> Option<OwnedSemaphorePermit> {
         self.semaphore.clone().acquire_owned().await.ok()
     }
-
-    pub fn with_parent(&self, parent_id: Uuid) -> Self {
-        Self {
-            parent_id: Some(parent_id),
-            ..self.clone()
-        }
-    }
 }
 
 pub struct TaskMonitor<'a> {
