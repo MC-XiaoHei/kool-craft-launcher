@@ -1,4 +1,5 @@
-use anyhow::{Result};
+use anyhow::{Error, Result};
+use dashmap::DashMap;
 use log::{error, warn};
 use std::future::Future;
 use std::marker::PhantomData;
@@ -7,13 +8,47 @@ use std::sync::{
     Mutex,
 };
 use tokio::sync::{mpsc, OwnedSemaphorePermit, Semaphore};
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+pub enum TaskState {
+    Pending,
+    Running,
+    Finished,
+    Failed,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TaskSnapshot {
+    pub id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub name: String,
+    pub state: TaskState,
+    pub progress: f64,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TaskNode {
+    pub id: Uuid,
+    pub name: String,
+    pub state: TaskState,
+    pub progress: f64,
+    pub message: Option<String>,
+    pub children: Vec<TaskNode>,
+}
+
+pub type TaskRegistry = Arc<DashMap<Uuid, TaskSnapshot>>;
 
 #[derive(Clone)]
 pub struct Context {
     pub reporter: ProgressReporter,
     pub race_ctx: Option<RaceContext>,
     pub semaphore: Arc<Semaphore>,
+    pub task_id: Uuid,
     pub task_name: String,
+    pub registry: TaskRegistry,
+    pub parent_id: Option<Uuid>,
 }
 
 impl Context {
@@ -24,6 +59,33 @@ impl Context {
     pub fn name(&self) -> &str {
         &self.task_name
     }
+
+    pub fn update_status_pending(&self) {
+        self.update_status(TaskState::Pending, 0.0, None);
+    }
+
+    pub fn update_status_running(&self, progress: f64) {
+        self.update_status(TaskState::Running, progress, None);
+    }
+
+    pub fn update_status_finished(&self) {
+        self.update_status(TaskState::Finished, 1.0, None);
+    }
+
+    pub fn update_status_failed(&self, error: &Error) {
+        self.update_status(TaskState::Failed, 1.0, Some(error.to_string()));
+    }
+
+    fn update_status(&self, state: TaskState, progress: f64, message: Option<String>) {
+        self.registry.insert(self.task_id, TaskSnapshot {
+            id: self.task_id,
+            parent_id: self.parent_id,
+            name: self.task_name.clone(),
+            state,
+            progress,
+            message,
+        });
+    }
 }
 
 #[derive(Clone)]
@@ -33,7 +95,9 @@ pub struct RaceContext {
 
 impl Default for RaceContext {
     fn default() -> Self {
-        Self { winner_flag: Arc::new(AtomicBool::new(false)) }
+        Self {
+            winner_flag: Arc::new(AtomicBool::new(false)),
+        }
     }
 }
 
@@ -132,7 +196,8 @@ impl ProgressReporter {
         }
 
         if let Some(value) = send_value {
-            self.tx.send(value)
+            self.tx
+                .send(value)
                 .unwrap_or_else(|e| warn!("Failed to send progress update: {:?}", e));
         }
     }

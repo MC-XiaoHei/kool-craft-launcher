@@ -1,18 +1,23 @@
-use super::core::{Context, ProgressReporter};
+use std::collections::HashMap;
+use super::core::{Context, ProgressReporter, TaskNode, TaskRegistry, TaskSnapshot};
 use super::traits::Task;
 use anyhow::Result;
 use std::sync::Arc;
+use dashmap::DashMap;
 use tokio::sync::{mpsc, Semaphore};
 use tokio::task::JoinHandle;
+use uuid::Uuid;
 
 pub struct Scheduler {
     semaphore: Arc<Semaphore>,
+    registry: TaskRegistry,
 }
 
 impl Scheduler {
     pub fn new(concurrency_limit: usize) -> Self {
         Self {
             semaphore: Arc::new(Semaphore::new(concurrency_limit)),
+            registry: Arc::new(DashMap::new()),
         }
     }
 
@@ -46,10 +51,46 @@ impl Scheduler {
             reporter,
             race_ctx: None,
             semaphore: self.semaphore.clone(),
-            task_name: "RootTask".to_string(),
+            task_id: task.id(),
+            task_name: task.name().into(),
+            registry: self.registry.clone(),
+            parent_id: None,
         };
 
         task.run((), ctx).await
+    }
+
+    pub fn tree(&self) -> Vec<TaskNode> {
+        let snapshots: Vec<TaskSnapshot> = self.registry.iter().map(|r| r.value().clone()).collect();
+
+        let mut children_map: HashMap<Option<Uuid>, Vec<TaskSnapshot>> = HashMap::new();
+        for snap in snapshots {
+            children_map.entry(snap.parent_id).or_default().push(snap);
+        }
+
+        fn build_nodes(
+            parent_id: Option<Uuid>,
+            map: &HashMap<Option<Uuid>, Vec<TaskSnapshot>>
+        ) -> Vec<TaskNode> {
+            if let Some(children) = map.get(&parent_id) {
+                let mut nodes = Vec::new();
+                for child in children {
+                    nodes.push(TaskNode {
+                        id: child.id,
+                        name: child.name.clone(),
+                        state: child.state,
+                        progress: child.progress,
+                        message: child.message.clone(),
+                        children: build_nodes(Some(child.id), map),
+                    });
+                }
+                nodes
+            } else {
+                Vec::new()
+            }
+        }
+
+        build_nodes(None, &children_map)
     }
 }
 

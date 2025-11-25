@@ -7,8 +7,10 @@ use std::future::Future;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tokio::task::JoinSet;
+use uuid::Uuid;
 
 pub struct Leaf<F, Fut, In, Out> {
+    id: Uuid,
     name: String,
     weight: f64,
     func: F,
@@ -18,6 +20,7 @@ pub struct Leaf<F, Fut, In, Out> {
 impl<F, Fut, In, Out> Leaf<F, Fut, In, Out> {
     pub fn new(name: &str, weight: f64, func: F) -> Self {
         Self {
+            id: Uuid::new_v4(),
             name: name.into(),
             weight,
             func,
@@ -36,6 +39,10 @@ where
 {
     type Input = In;
     type Output = Out;
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
     fn name(&self) -> &str {
         &self.name
     }
@@ -44,24 +51,46 @@ where
     }
 
     async fn run(&self, input: In, ctx: Context) -> Result<Out> {
+        ctx.update_status_pending();
+
         let task_ctx = Context {
             task_name: self.name.clone(),
             ..ctx
         };
+
         // Hold the acquired permit for the lifetime of this task to enforce the semaphore-based concurrency limit.
         let _permit = task_ctx.acquire_permit().await;
+
+        task_ctx.update_status_running(0.0);
         task_ctx.reporter.update(0.0);
         let res = (self.func)(input, task_ctx.clone()).await;
         if res.is_ok() {
             task_ctx.reporter.update(1.0);
+        }
+
+        match &res {
+            Ok(_) => {
+                task_ctx.reporter.update(1.0);
+                task_ctx.update_status_finished();
+            }
+            Err(e) => {
+                task_ctx.update_status_failed(e);
+            }
         }
         res
     }
 }
 
 pub struct Chain<A, B> {
+    id: Uuid,
     pub head: A,
     pub tail: B,
+}
+
+impl<A, B> Chain<A, B> {
+    pub fn new(head: A, tail: B) -> Self {
+        Self { id: Uuid::new_v4(), head, tail }
+    }
 }
 
 #[async_trait]
@@ -72,6 +101,10 @@ where
 {
     type Input = A::Input;
     type Output = B::Output;
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
     fn name(&self) -> &str {
         "Chain"
     }
@@ -102,22 +135,48 @@ where
 }
 
 pub struct NamedTask<T> {
+    id: Uuid,
     pub name: String,
     pub inner: T,
+}
+
+impl<T> NamedTask<T> {
+    pub fn new(name: String, inner: T) -> Self {
+        Self { id: Uuid::new_v4(), name, inner }
+    }
 }
 
 #[async_trait]
 impl<T: Task> Task for NamedTask<T> {
     type Input = T::Input;
     type Output = T::Output;
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
     fn name(&self) -> &str {
         &self.name
     }
     fn weight(&self) -> f64 {
         self.inner.weight()
     }
+
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
-        self.inner.run(input, ctx).await
+        let id = Uuid::new_v4();
+        ctx.update_status_running(0.0);
+
+        let child_ctx = Context {
+            parent_id: Some(id),
+            ..ctx.clone()
+        };
+
+        let res = self.inner.run(input, child_ctx).await;
+
+        match &res {
+            Ok(_) => ctx.update_status_finished(),
+            Err(e) => ctx.update_status_failed(e),
+        }
+        res
     }
 }
 
@@ -157,6 +216,7 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 }
 
 pub struct Race<T: Task> {
+    id: Uuid,
     name: String,
     tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
 }
@@ -170,6 +230,7 @@ impl<T: Task> Race<T> {
 impl<T: Task> GroupBuilder<T, Race<T>> {
     pub fn build(self) -> Race<T> {
         Race {
+            id: Uuid::new_v4(),
             name: self.name,
             tasks: self.tasks,
         }
@@ -183,6 +244,10 @@ where
 {
     type Input = T::Input;
     type Output = T::Output;
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
     fn name(&self) -> &str {
         &self.name
     }
@@ -191,6 +256,8 @@ where
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
+        ctx.update_status_running(0.0);
+
         let race_ctx = ctx.race_ctx.clone().unwrap_or_default();
         let mut futures = Vec::new();
 
@@ -204,7 +271,14 @@ where
             futures.push(Box::pin(async move { task.run(input, ctx).await }));
         }
 
-        match select_ok(futures).await {
+        let res = select_ok(futures).await;
+
+        match &res {
+            Ok(_) => ctx.update_status_finished(),
+            Err(e) => ctx.update_status_failed(e),
+        }
+
+        match res {
             Ok((val, _)) => Ok(val),
             Err(e) => Err(anyhow!("All race tasks failed: {}", e)),
         }
@@ -212,6 +286,7 @@ where
 }
 
 pub struct Parallel<T: Task> {
+    id: Uuid,
     name: String,
     tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
 }
@@ -225,6 +300,7 @@ impl<T: Task> Parallel<T> {
 impl<T: Task> GroupBuilder<T, Parallel<T>> {
     pub fn build(self) -> Parallel<T> {
         Parallel {
+            id: Uuid::new_v4(),
             name: self.name,
             tasks: self.tasks,
         }
@@ -235,6 +311,10 @@ impl<T: Task> GroupBuilder<T, Parallel<T>> {
 impl<T: Task> Task for Parallel<T> {
     type Input = T::Input;
     type Output = Vec<T::Output>;
+
+    fn id(&self) -> Uuid {
+        self.id
+    }
     fn name(&self) -> &str {
         &self.name
     }
@@ -243,6 +323,8 @@ impl<T: Task> Task for Parallel<T> {
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
+        ctx.update_status_running(0.0);
+
         let mut set = JoinSet::new();
         let mut offset = 0.0;
 
@@ -254,6 +336,7 @@ impl<T: Task> Task for Parallel<T> {
             let sub_rep = ctx.reporter.sub_scope(offset, w);
             let sub_ctx = Context {
                 reporter: sub_rep,
+                parent_id: Some(self.id),
                 ..ctx.clone()
             };
 
@@ -265,19 +348,30 @@ impl<T: Task> Task for Parallel<T> {
         }
 
         let mut indexed_results = Vec::with_capacity(self.tasks.len());
+        let mut error = None;
+
         while let Some(res) = set.join_next().await {
             match res {
                 Ok((i, Ok(val))) => indexed_results.push((i, val)),
                 Ok((i, Err(e))) => {
                     set.shutdown().await;
-                    return Err(anyhow!("Parallel task {} failed: {}", i, e));
+                    error = Some(anyhow!("Parallel task {} failed: {}", i, e));
+                    break;
                 }
                 Err(e) => {
                     set.shutdown().await;
-                    return Err(anyhow!("Task panic: {}", e));
+                    error = Some(anyhow!("Task panic: {}", e));
+                    break;
                 }
             }
         }
+
+        if let Some(error) = error {
+            ctx.update_status_failed(&error);
+            return Err(error);
+        }
+
+        ctx.update_status_finished();
 
         indexed_results.sort_by_key(|(i, _)| *i);
         Ok(indexed_results.into_iter().map(|(_, val)| val).collect())
