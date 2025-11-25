@@ -1,15 +1,15 @@
 use uuid::Uuid;
 use crate::scheduler::context::{Context};
-use crate::scheduler::types::{TaskSnapshot, TaskState};
+use crate::scheduler::model::{TaskSnapshot, TaskState};
 
-pub struct TaskMonitor<'a> {
+pub struct TaskStatusUpdater<'a> {
     ctx: &'a Context,
     id: Uuid,
     weight: u64,
     name: &'a str,
 }
 
-impl<'a> TaskMonitor<'a> {
+impl<'a> TaskStatusUpdater<'a> {
     pub fn new(ctx: &'a Context, id: Uuid, weight: u64, name: &'a str) -> Self {
         Self { ctx, id, weight, name }
     }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use uuid::Uuid;
 use crate::scheduler::sync::RaceContext;
-use crate::scheduler::types::TaskRegistry;
+use crate::scheduler::model::TaskRegistry;
 
 #[derive(Clone)]
 pub struct Context {

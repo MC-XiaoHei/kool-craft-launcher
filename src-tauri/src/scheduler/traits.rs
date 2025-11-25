@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
-use crate::scheduler::monitor::TaskMonitor;
+use crate::scheduler::status::TaskStatusUpdater;
 use super::context::{Context};
 
 #[async_trait]
@@ -15,7 +15,7 @@ pub trait Task: Send + Sync {
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output>;
 
-    fn monitor<'a>(&'a self, ctx: &'a Context) -> TaskMonitor<'a> {
-        TaskMonitor::new(ctx, self.id(), self.weight(), self.name())
+    fn monitor<'a>(&'a self, ctx: &'a Context) -> TaskStatusUpdater<'a> {
+        TaskStatusUpdater::new(ctx, self.id(), self.weight(), self.name())
     }
 }

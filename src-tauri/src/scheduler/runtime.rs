@@ -1,7 +1,6 @@
 use super::context::Context;
 use super::traits::Task;
-use crate::scheduler::types::{TaskNode, TaskRegistry, TaskSnapshot};
-use crate::scheduler::TaskState;
+use crate::scheduler::model::{TaskNode, TaskRegistry, TaskSnapshot};
 use anyhow::Result;
 use dashmap::DashMap;
 use std::collections::HashMap;
@@ -24,7 +23,7 @@ impl Scheduler {
 
     pub async fn run<T>(&self, task: T) -> Result<T::Output>
     where
-        T: Task<Input = ()>,
+        T: Task<Input=()>,
     {
         let ctx = Context {
             race_ctx: None,
@@ -54,29 +53,7 @@ impl Scheduler {
 
                 for child_snap in children {
                     let child_nodes = build_nodes(Some(child_snap.id), map);
-
-                    let child_progress = if child_nodes.is_empty() {
-                        child_snap.progress
-                    } else {
-                        let total_weight_f64: f64 =
-                            child_nodes.iter().map(|n| n.weight as f64).sum();
-
-                        if total_weight_f64 == 0.0 {
-                            if child_snap.state == TaskState::Finished
-                                || child_snap.state == TaskState::Failed
-                            {
-                                1.0
-                            } else {
-                                0.0
-                            }
-                        } else {
-                            let weighted_progress: f64 = child_nodes
-                                .iter()
-                                .map(|n| n.progress * n.weight as f64)
-                                .sum();
-                            weighted_progress / total_weight_f64
-                        }
-                    };
+                    let child_progress = child_snap.calculate_effective_progress(&child_nodes);
 
                     nodes.push(TaskNode {
                         id: child_snap.id,
@@ -84,8 +61,8 @@ impl Scheduler {
                         state: child_snap.state,
                         progress: child_progress,
                         message: child_snap.message.clone(),
-                        children: child_nodes,
                         weight: child_snap.weight,
+                        children: child_nodes,
                     });
                 }
 

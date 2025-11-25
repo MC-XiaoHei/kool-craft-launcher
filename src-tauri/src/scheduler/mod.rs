@@ -3,12 +3,12 @@ pub mod traits;
 pub mod combinators;
 pub mod builder;
 pub mod runtime;
-pub mod types;
-pub mod monitor;
+pub mod model;
+pub mod status;
 
 mod sync;
 
 pub use builder::{task, pipeline, race, parallel, TaskBuilder};
 pub use runtime::Scheduler;
 pub use traits::Task;
-pub use types::{TaskNode, TaskState};
+pub use model::{TaskNode, TaskState};
