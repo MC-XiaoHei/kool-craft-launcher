@@ -35,7 +35,7 @@ where
     In: Send + Clone + 'static,
     Out: Send + 'static,
     F: Fn(In, Context) -> Fut + Send + Sync,
-    Fut: Future<Output = Result<Out>> + Send,
+    Fut: Future<Output=Result<Out>> + Send,
 {
     type Input = In;
     type Output = Out;
@@ -51,31 +51,18 @@ where
     }
 
     async fn run(&self, input: In, ctx: Context) -> Result<Out> {
-        ctx.update_status_pending();
-
-        let task_ctx = Context {
-            task_name: self.name.clone(),
-            ..ctx
-        };
+        let monitor = self.monitor(&ctx);
+        monitor.pending();
 
         // Hold the acquired permit for the lifetime of this task to enforce the semaphore-based concurrency limit.
-        let _permit = task_ctx.acquire_permit().await;
+        let _permit = ctx.acquire_permit().await;
 
-        task_ctx.update_status_running(0.0);
-        task_ctx.reporter.update(0.0);
-        let res = (self.func)(input, task_ctx.clone()).await;
-        if res.is_ok() {
-            task_ctx.reporter.update(1.0);
-        }
+        monitor.running(0.0);
+        let res = (self.func)(input, ctx.clone()).await;
 
         match &res {
-            Ok(_) => {
-                task_ctx.reporter.update(1.0);
-                task_ctx.update_status_finished();
-            }
-            Err(e) => {
-                task_ctx.update_status_failed(e);
-            }
+            Ok(_) => monitor.finished(),
+            Err(e) => monitor.failed(e),
         }
         res
     }
@@ -89,7 +76,11 @@ pub struct Chain<A, B> {
 
 impl<A, B> Chain<A, B> {
     pub fn new(head: A, tail: B) -> Self {
-        Self { id: Uuid::new_v4(), head, tail }
+        Self {
+            id: Uuid::new_v4(),
+            head,
+            tail,
+        }
     }
 }
 
@@ -97,7 +88,7 @@ impl<A, B> Chain<A, B> {
 impl<A, B> Task for Chain<A, B>
 where
     A: Task,
-    B: Task<Input = A::Output>,
+    B: Task<Input=A::Output>,
 {
     type Input = A::Input;
     type Output = B::Output;
@@ -142,7 +133,11 @@ pub struct NamedTask<T> {
 
 impl<T> NamedTask<T> {
     pub fn new(name: String, inner: T) -> Self {
-        Self { id: Uuid::new_v4(), name, inner }
+        Self {
+            id: Uuid::new_v4(),
+            name,
+            inner,
+        }
     }
 }
 
@@ -162,19 +157,19 @@ impl<T: Task> Task for NamedTask<T> {
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
-        let id = Uuid::new_v4();
-        ctx.update_status_running(0.0);
+        let monitor = self.monitor(&ctx);
+        monitor.running(0.0);
 
         let child_ctx = Context {
-            parent_id: Some(id),
+            parent_id: Some(self.id),
             ..ctx.clone()
         };
 
         let res = self.inner.run(input, child_ctx).await;
 
         match &res {
-            Ok(_) => ctx.update_status_finished(),
-            Err(e) => ctx.update_status_failed(e),
+            Ok(_) => monitor.finished(),
+            Err(e) => monitor.failed(e),
         }
         res
     }
@@ -182,7 +177,7 @@ impl<T: Task> Task for NamedTask<T> {
 
 pub struct GroupBuilder<T: Task, Target> {
     name: String,
-    tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
+    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
     _phantom: PhantomData<Target>,
 }
 
@@ -197,7 +192,7 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 
     pub fn add<U>(mut self, task: U) -> Self
     where
-        U: Task<Input = T::Input, Output = T::Output> + 'static,
+        U: Task<Input=T::Input, Output=T::Output> + 'static,
     {
         self.tasks.push(Arc::new(task));
         self
@@ -205,8 +200,8 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 
     pub fn extend<I, U>(mut self, iter: I) -> Self
     where
-        I: IntoIterator<Item = U>,
-        U: Task<Input = T::Input, Output = T::Output> + 'static,
+        I: IntoIterator<Item=U>,
+        U: Task<Input=T::Input, Output=T::Output> + 'static,
     {
         for task in iter {
             self.tasks.push(Arc::new(task));
@@ -218,7 +213,7 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 pub struct Race<T: Task> {
     id: Uuid,
     name: String,
-    tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
+    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
 }
 
 impl<T: Task> Race<T> {
@@ -256,7 +251,8 @@ where
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
-        ctx.update_status_running(0.0);
+        let monitor = self.monitor(&ctx);
+        monitor.running(0.0);
 
         let race_ctx = ctx.race_ctx.clone().unwrap_or_default();
         let mut futures = Vec::new();
@@ -273,14 +269,15 @@ where
 
         let res = select_ok(futures).await;
 
-        match &res {
-            Ok(_) => ctx.update_status_finished(),
-            Err(e) => ctx.update_status_failed(e),
-        }
-
         match res {
-            Ok((val, _)) => Ok(val),
-            Err(e) => Err(anyhow!("All race tasks failed: {}", e)),
+            Ok((val, _)) => {
+                monitor.finished();
+                Ok(val)
+            }
+            Err(e) => {
+                monitor.failed(&e);
+                Err(anyhow!("All race tasks failed: {}", e))
+            }
         }
     }
 }
@@ -288,7 +285,7 @@ where
 pub struct Parallel<T: Task> {
     id: Uuid,
     name: String,
-    tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
+    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
 }
 
 impl<T: Task> Parallel<T> {
@@ -323,7 +320,8 @@ impl<T: Task> Task for Parallel<T> {
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
-        ctx.update_status_running(0.0);
+        let monitor = self.monitor(&ctx);
+        monitor.running(0.0);
 
         let mut set = JoinSet::new();
         let mut offset = 0.0;
@@ -367,11 +365,11 @@ impl<T: Task> Task for Parallel<T> {
         }
 
         if let Some(error) = error {
-            ctx.update_status_failed(&error);
+            monitor.failed(&error);
             return Err(error);
         }
 
-        ctx.update_status_finished();
+        monitor.finished();
 
         indexed_results.sort_by_key(|(i, _)| *i);
         Ok(indexed_results.into_iter().map(|(_, val)| val).collect())

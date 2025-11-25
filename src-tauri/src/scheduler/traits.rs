@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
-use super::core::Context;
+use super::core::{Context, TaskMonitor};
 
 #[async_trait]
 pub trait Task: Send + Sync {
@@ -13,4 +13,8 @@ pub trait Task: Send + Sync {
     fn weight(&self) -> f64;
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output>;
+
+    fn monitor<'a>(&'a self, ctx: &'a Context) -> TaskMonitor<'a> {
+        TaskMonitor::new(ctx, self.id(), self.name())
+    }
 }

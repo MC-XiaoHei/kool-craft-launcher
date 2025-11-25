@@ -51,8 +51,6 @@ impl Scheduler {
             reporter,
             race_ctx: None,
             semaphore: self.semaphore.clone(),
-            task_id: task.id(),
-            task_name: task.name().into(),
             registry: self.registry.clone(),
             parent_id: None,
         };

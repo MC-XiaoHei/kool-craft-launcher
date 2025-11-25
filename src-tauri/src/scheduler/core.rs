@@ -45,8 +45,6 @@ pub struct Context {
     pub reporter: ProgressReporter,
     pub race_ctx: Option<RaceContext>,
     pub semaphore: Arc<Semaphore>,
-    pub task_id: Uuid,
-    pub task_name: String,
     pub registry: TaskRegistry,
     pub parent_id: Option<Uuid>,
 }
@@ -56,35 +54,55 @@ impl Context {
         self.semaphore.clone().acquire_owned().await.ok()
     }
 
-    pub fn name(&self) -> &str {
-        &self.task_name
+    pub fn with_parent(&self, parent_id: Uuid) -> Self {
+        Self {
+            parent_id: Some(parent_id),
+            ..self.clone()
+        }
+    }
+}
+
+pub struct TaskMonitor<'a> {
+    ctx: &'a Context,
+    id: Uuid,
+    name: &'a str,
+}
+
+impl<'a> TaskMonitor<'a> {
+    pub fn new(ctx: &'a Context, id: Uuid, name: &'a str) -> Self {
+        Self { ctx, id, name }
     }
 
-    pub fn update_status_pending(&self) {
-        self.update_status(TaskState::Pending, 0.0, None);
+    pub fn pending(&self) {
+        self.update(TaskState::Pending, 0.0, None);
     }
 
-    pub fn update_status_running(&self, progress: f64) {
-        self.update_status(TaskState::Running, progress, None);
+    pub fn running(&self, progress: f64) {
+        self.update(TaskState::Running, progress, None);
     }
 
-    pub fn update_status_finished(&self) {
-        self.update_status(TaskState::Finished, 1.0, None);
+    pub fn finished(&self) {
+        self.update(TaskState::Finished, 1.0, None);
     }
 
-    pub fn update_status_failed(&self, error: &Error) {
-        self.update_status(TaskState::Failed, 1.0, Some(error.to_string()));
+    pub fn failed(&self, error: &anyhow::Error) {
+        self.update(TaskState::Failed, 1.0, Some(error.to_string()));
     }
 
-    fn update_status(&self, state: TaskState, progress: f64, message: Option<String>) {
-        self.registry.insert(self.task_id, TaskSnapshot {
-            id: self.task_id,
-            parent_id: self.parent_id,
-            name: self.task_name.clone(),
+    fn update(&self, state: TaskState, progress: f64, message: Option<String>) {
+        self.ctx.registry.insert(self.id, TaskSnapshot {
+            id: self.id,
+            parent_id: self.ctx.parent_id,
+            name: self.name.to_string(),
             state,
             progress,
             message,
         });
+        self.report_progress(progress);
+    }
+
+    fn report_progress(&self, ratio: f64) {
+        self.ctx.reporter.update(ratio);
     }
 }
 
