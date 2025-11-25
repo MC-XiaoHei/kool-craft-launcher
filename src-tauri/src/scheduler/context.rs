@@ -7,11 +7,11 @@ use crate::scheduler::types::TaskRegistry;
 
 #[derive(Clone)]
 pub struct Context {
-    pub reporter: ProgressReporter,
-    pub race_ctx: Option<RaceContext>,
-    pub semaphore: Arc<Semaphore>,
-    pub registry: TaskRegistry,
-    pub parent_id: Option<Uuid>,
+    pub(crate) reporter: ProgressReporter,
+    pub(crate) race_ctx: Option<RaceContext>,
+    pub(crate) semaphore: Arc<Semaphore>,
+    pub(crate) registry: TaskRegistry,
+    pub(crate) parent_id: Option<Uuid>,
 }
 
 impl Context {
