@@ -1,5 +1,5 @@
 use super::combinators::{Chain, GroupBuilder, Leaf, NamedTask, Parallel, Race};
-use super::core::Context;
+use super::context::Context;
 use super::traits::Task;
 use anyhow::Result;
 use std::future::Future;

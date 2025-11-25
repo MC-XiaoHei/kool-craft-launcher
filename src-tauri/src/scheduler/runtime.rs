@@ -1,12 +1,15 @@
 use std::collections::HashMap;
-use super::core::{Context, ProgressReporter, TaskNode, TaskRegistry, TaskSnapshot};
+use super::context::Context;
 use super::traits::Task;
 use anyhow::Result;
 use std::sync::Arc;
 use dashmap::DashMap;
+use log::info;
 use tokio::sync::{mpsc, Semaphore};
 use tokio::task::JoinHandle;
 use uuid::Uuid;
+use crate::scheduler::progress::ProgressReporter;
+use crate::scheduler::types::{TaskNode, TaskRegistry, TaskSnapshot};
 
 pub struct Scheduler {
     semaphore: Arc<Semaphore>,
@@ -40,7 +43,7 @@ impl Scheduler {
         let handle = tokio::spawn(async move {
             while let Some((curr, _total)) = rx.recv().await {
                 let pct = curr * factor;
-                println!(">> [Progress] {:<15} {:.1}%", name, pct);
+                info!(">> [Progress] {:<15} {:.1}%", name, pct);
             }
         });
 

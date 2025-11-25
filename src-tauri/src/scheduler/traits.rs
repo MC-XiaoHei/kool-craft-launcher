@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use anyhow::Result;
 use uuid::Uuid;
-use super::core::{Context, TaskMonitor};
+use crate::scheduler::monitor::TaskMonitor;
+use super::context::{Context};
 
 #[async_trait]
 pub trait Task: Send + Sync {
