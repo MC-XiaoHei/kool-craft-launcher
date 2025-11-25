@@ -12,13 +12,13 @@ use uuid::Uuid;
 pub struct FnTask<F, Fut, In, Out> {
     id: Uuid,
     name: String,
-    weight: f64,
+    weight: u64,
     func: F,
     _p: PhantomData<fn(In) -> (Out, Fut)>,
 }
 
 impl<F, Fut, In, Out> FnTask<F, Fut, In, Out> {
-    pub fn new(name: &str, weight: f64, func: F) -> Self {
+    pub fn new(name: &str, weight: u64, func: F) -> Self {
         Self {
             id: Uuid::new_v4(),
             name: name.into(),
@@ -46,7 +46,7 @@ where
     fn name(&self) -> &str {
         &self.name
     }
-    fn weight(&self) -> f64 {
+    fn weight(&self) -> u64 {
         self.weight
     }
 
@@ -99,29 +99,14 @@ where
     fn name(&self) -> &str {
         "Chain"
     }
-    fn weight(&self) -> f64 {
+    fn weight(&self) -> u64 {
         self.head.weight() + self.tail.weight()
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
-        let head_w = self.head.weight();
-        let tail_w = self.tail.weight();
-
-        let head_rep = ctx.reporter.sub_scope(0.0, head_w);
-        let head_ctx = Context {
-            reporter: head_rep,
-            ..ctx.clone()
-        };
-        let mid = self.head.run(input, head_ctx).await?;
-
-        let tail_rep = ctx.reporter.sub_scope(head_w, tail_w);
-        let tail_ctx = Context {
-            reporter: tail_rep,
-            ..ctx.clone()
-        };
-        let out = self.tail.run(mid, tail_ctx).await?;
-
-        Ok(out)
+        let head_output = self.head.run(input, ctx.clone()).await?;
+        let output = self.tail.run(head_output, ctx.clone()).await?;
+        Ok(output)
     }
 }
 
@@ -152,7 +137,7 @@ impl<T: Task> Task for NamedTask<T> {
     fn name(&self) -> &str {
         &self.name
     }
-    fn weight(&self) -> f64 {
+    fn weight(&self) -> u64 {
         self.inner.weight()
     }
 
@@ -246,8 +231,8 @@ where
     fn name(&self) -> &str {
         &self.name
     }
-    fn weight(&self) -> f64 {
-        self.tasks.iter().map(|t| t.weight()).fold(0.0, f64::max)
+    fn weight(&self) -> u64 {
+        self.tasks.iter().map(|t| t.weight()).fold(0, u64::max)
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
@@ -293,6 +278,54 @@ impl<T: Task> Parallel<T> {
     pub fn builder(name: &str) -> GroupBuilder<T, Self> {
         GroupBuilder::<T, Self>::new(name)
     }
+
+    fn spawn_subtasks(&self, input: T::Input, ctx: &Context) -> JoinSet<(usize, Result<T::Output>)> {
+        let mut set = JoinSet::new();
+
+        for (i, task) in self.tasks.iter().enumerate() {
+            let task = task.clone();
+            let input = input.clone();
+
+            let sub_ctx = Context {
+                parent_id: Some(self.id),
+                ..ctx.clone()
+            };
+
+            set.spawn(async move {
+                let res = task.run(input, sub_ctx).await;
+                (i, res)
+            });
+        }
+        set
+    }
+
+    async fn collect_results(&self, set: &mut JoinSet<(usize, Result<T::Output>)>) -> Result<Vec<T::Output>> {
+        let mut indexed_results = Vec::with_capacity(self.tasks.len());
+        let mut error = None;
+
+        while let Some(res) = set.join_next().await {
+            match res {
+                Ok((i, Ok(val))) => indexed_results.push((i, val)),
+                Ok((i, Err(e))) => {
+                    set.shutdown().await;
+                    error = Some(anyhow!("Parallel task {} failed: {}", i, e));
+                    break;
+                }
+                Err(e) => {
+                    set.shutdown().await;
+                    error = Some(anyhow!("Task panic: {}", e));
+                    break;
+                }
+            }
+        }
+
+        if let Some(e) = error {
+            return Err(e);
+        }
+
+        indexed_results.sort_by_key(|(i, _)| *i);
+        Ok(indexed_results.into_iter().map(|(_, val)| val).collect())
+    }
 }
 
 impl<T: Task> GroupBuilder<T, Parallel<T>> {
@@ -316,7 +349,7 @@ impl<T: Task> Task for Parallel<T> {
     fn name(&self) -> &str {
         &self.name
     }
-    fn weight(&self) -> f64 {
+    fn weight(&self) -> u64 {
         self.tasks.iter().map(|t| t.weight()).sum()
     }
 
@@ -324,55 +357,14 @@ impl<T: Task> Task for Parallel<T> {
         let monitor = self.monitor(&ctx);
         monitor.running(0.0);
 
-        let mut set = JoinSet::new();
-        let mut offset = 0.0;
+        let mut subtasks_set = self.spawn_subtasks(input, &ctx);
 
-        for (i, task) in self.tasks.iter().enumerate() {
-            let task = task.clone();
-            let input = input.clone();
-            let w = task.weight();
+        let result = self.collect_results(&mut subtasks_set).await;
 
-            let sub_rep = ctx.reporter.sub_scope(offset, w);
-            let sub_ctx = Context {
-                reporter: sub_rep,
-                parent_id: Some(self.id),
-                ..ctx.clone()
-            };
-
-            set.spawn(async move {
-                let res = task.run(input, sub_ctx).await;
-                (i, res)
-            });
-            offset += w;
+        match &result {
+            Ok(_) => monitor.finished(),
+            Err(e) => monitor.failed(e),
         }
-
-        let mut indexed_results = Vec::with_capacity(self.tasks.len());
-        let mut error = None;
-
-        while let Some(res) = set.join_next().await {
-            match res {
-                Ok((i, Ok(val))) => indexed_results.push((i, val)),
-                Ok((i, Err(e))) => {
-                    set.shutdown().await;
-                    error = Some(anyhow!("Parallel task {} failed: {}", i, e));
-                    break;
-                }
-                Err(e) => {
-                    set.shutdown().await;
-                    error = Some(anyhow!("Task panic: {}", e));
-                    break;
-                }
-            }
-        }
-
-        if let Some(error) = error {
-            monitor.failed(&error);
-            return Err(error);
-        }
-
-        monitor.finished();
-
-        indexed_results.sort_by_key(|(i, _)| *i);
-        Ok(indexed_results.into_iter().map(|(_, val)| val).collect())
+        result
     }
 }

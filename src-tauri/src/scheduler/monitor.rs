@@ -5,12 +5,13 @@ use crate::scheduler::types::{TaskSnapshot, TaskState};
 pub struct TaskMonitor<'a> {
     ctx: &'a Context,
     id: Uuid,
+    weight: u64,
     name: &'a str,
 }
 
 impl<'a> TaskMonitor<'a> {
-    pub fn new(ctx: &'a Context, id: Uuid, name: &'a str) -> Self {
-        Self { ctx, id, name }
+    pub fn new(ctx: &'a Context, id: Uuid, weight: u64, name: &'a str) -> Self {
+        Self { ctx, id, weight, name }
     }
 
     pub fn pending(&self) {
@@ -34,14 +35,10 @@ impl<'a> TaskMonitor<'a> {
             id: self.id,
             parent_id: self.ctx.parent_id,
             name: self.name.to_string(),
+            weight: self.weight,
             state,
             progress,
             message,
         });
-        self.report_progress(progress);
-    }
-
-    fn report_progress(&self, ratio: f64) {
-        self.ctx.reporter.update(ratio);
     }
 }

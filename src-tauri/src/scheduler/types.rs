@@ -17,6 +17,7 @@ pub struct TaskSnapshot {
     pub name: String,
     pub state: TaskState,
     pub progress: f64,
+    pub weight: u64,
     pub message: Option<String>,
 }
 
@@ -27,6 +28,7 @@ pub struct TaskNode {
     pub state: TaskState,
     pub progress: f64,
     pub message: Option<String>,
+    pub weight: u64,
     pub children: Vec<TaskNode>,
 }
 

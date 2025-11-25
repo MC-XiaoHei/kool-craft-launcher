@@ -1,13 +1,11 @@
 use std::sync::Arc;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use uuid::Uuid;
-use crate::scheduler::progress::ProgressReporter;
 use crate::scheduler::sync::RaceContext;
 use crate::scheduler::types::TaskRegistry;
 
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) reporter: ProgressReporter,
     pub(crate) race_ctx: Option<RaceContext>,
     pub(crate) semaphore: Arc<Semaphore>,
     pub(crate) registry: TaskRegistry,

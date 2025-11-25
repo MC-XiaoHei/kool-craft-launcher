@@ -1,15 +1,13 @@
-use std::collections::HashMap;
 use super::context::Context;
 use super::traits::Task;
-use anyhow::Result;
-use std::sync::Arc;
-use dashmap::DashMap;
-use log::info;
-use tokio::sync::{mpsc, Semaphore};
-use tokio::task::JoinHandle;
-use uuid::Uuid;
-use crate::scheduler::progress::ProgressReporter;
 use crate::scheduler::types::{TaskNode, TaskRegistry, TaskSnapshot};
+use crate::scheduler::TaskState;
+use anyhow::Result;
+use dashmap::DashMap;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Semaphore;
+use uuid::Uuid;
 
 pub struct Scheduler {
     semaphore: Arc<Semaphore>,
@@ -28,30 +26,7 @@ impl Scheduler {
     where
         T: Task<Input = ()>,
     {
-        let (tx, mut rx) = mpsc::unbounded_channel();
-
-        let total_weight = task.weight();
-        let reporter = ProgressReporter::new(tx, total_weight);
-        let name = task.name().to_string();
-
-        let factor = if total_weight > 0.0 {
-            100.0 / total_weight
-        } else {
-            0.0
-        };
-
-        let handle = tokio::spawn(async move {
-            while let Some((curr, _total)) = rx.recv().await {
-                let pct = curr * factor;
-                info!(">> [Progress] {:<15} {:.1}%", name, pct);
-            }
-        });
-
-        // The guard ensures the background progress reporting task is aborted when the function exits.
-        let _guard = AbortGuard::new(handle);
-
         let ctx = Context {
-            reporter,
             race_ctx: None,
             semaphore: self.semaphore.clone(),
             registry: self.registry.clone(),
@@ -62,7 +37,8 @@ impl Scheduler {
     }
 
     pub fn tree(&self) -> Vec<TaskNode> {
-        let snapshots: Vec<TaskSnapshot> = self.registry.iter().map(|r| r.value().clone()).collect();
+        let snapshots: Vec<TaskSnapshot> =
+            self.registry.iter().map(|r| r.value().clone()).collect();
 
         let mut children_map: HashMap<Option<Uuid>, Vec<TaskSnapshot>> = HashMap::new();
         for snap in snapshots {
@@ -71,20 +47,48 @@ impl Scheduler {
 
         fn build_nodes(
             parent_id: Option<Uuid>,
-            map: &HashMap<Option<Uuid>, Vec<TaskSnapshot>>
+            map: &HashMap<Option<Uuid>, Vec<TaskSnapshot>>,
         ) -> Vec<TaskNode> {
             if let Some(children) = map.get(&parent_id) {
                 let mut nodes = Vec::new();
-                for child in children {
+
+                for child_snap in children {
+                    let child_nodes = build_nodes(Some(child_snap.id), map);
+
+                    let child_progress = if child_nodes.is_empty() {
+                        child_snap.progress
+                    } else {
+                        let total_weight_f64: f64 =
+                            child_nodes.iter().map(|n| n.weight as f64).sum();
+
+                        if total_weight_f64 == 0.0 {
+                            if child_snap.state == TaskState::Finished
+                                || child_snap.state == TaskState::Failed
+                            {
+                                1.0
+                            } else {
+                                0.0
+                            }
+                        } else {
+                            let weighted_progress: f64 = child_nodes
+                                .iter()
+                                .map(|n| n.progress * n.weight as f64)
+                                .sum();
+                            weighted_progress / total_weight_f64
+                        }
+                    };
+
                     nodes.push(TaskNode {
-                        id: child.id,
-                        name: child.name.clone(),
-                        state: child.state,
-                        progress: child.progress,
-                        message: child.message.clone(),
-                        children: build_nodes(Some(child.id), map),
+                        id: child_snap.id,
+                        name: child_snap.name.clone(),
+                        state: child_snap.state,
+                        progress: child_progress,
+                        message: child_snap.message.clone(),
+                        children: child_nodes,
+                        weight: child_snap.weight,
                     });
                 }
+
                 nodes
             } else {
                 Vec::new()
@@ -92,19 +96,5 @@ impl Scheduler {
         }
 
         build_nodes(None, &children_map)
-    }
-}
-
-struct AbortGuard(JoinHandle<()>);
-
-impl AbortGuard {
-    fn new(h: JoinHandle<()>) -> Self {
-        Self(h)
-    }
-}
-
-impl Drop for AbortGuard {
-    fn drop(&mut self) {
-        self.0.abort();
     }
 }

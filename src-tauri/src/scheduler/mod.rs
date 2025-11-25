@@ -7,7 +7,6 @@ pub mod types;
 pub mod monitor;
 
 mod sync;
-mod progress;
 
 pub use builder::{task, pipeline, race, parallel, TaskBuilder};
 pub use runtime::Scheduler;
