@@ -1,15 +1,15 @@
-use super::combinators::{Chain, GroupBuilder, Leaf, NamedTask, Parallel, Race};
+use super::combinators::{Chain, GroupBuilder, FnTask, NamedTask, Parallel, Race};
 use super::context::Context;
 use super::traits::Task;
 use anyhow::Result;
 use std::future::Future;
 
-pub fn task<F, Fut, In, Out>(name: &str, func: F) -> Leaf<F, Fut, In, Out>
+pub fn task<F, Fut, In, Out>(name: &str, func: F) -> FnTask<F, Fut, In, Out>
 where
     F: Fn(In, Context) -> Fut + Send + Sync,
     Fut: Future<Output = Result<Out>> + Send,
 {
-    Leaf::new(name, 1.0, func)
+    FnTask::new(name, 1.0, func)
 }
 
 pub fn pipeline(name: &str) -> PipelineStarter {

@@ -9,7 +9,7 @@ use std::sync::Arc;
 use tokio::task::JoinSet;
 use uuid::Uuid;
 
-pub struct Leaf<F, Fut, In, Out> {
+pub struct FnTask<F, Fut, In, Out> {
     id: Uuid,
     name: String,
     weight: f64,
@@ -17,7 +17,7 @@ pub struct Leaf<F, Fut, In, Out> {
     _p: PhantomData<fn(In) -> (Out, Fut)>,
 }
 
-impl<F, Fut, In, Out> Leaf<F, Fut, In, Out> {
+impl<F, Fut, In, Out> FnTask<F, Fut, In, Out> {
     pub fn new(name: &str, weight: f64, func: F) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -30,7 +30,7 @@ impl<F, Fut, In, Out> Leaf<F, Fut, In, Out> {
 }
 
 #[async_trait]
-impl<F, Fut, In, Out> Task for Leaf<F, Fut, In, Out>
+impl<F, Fut, In, Out> Task for FnTask<F, Fut, In, Out>
 where
     In: Send + Clone + 'static,
     Out: Send + 'static,
