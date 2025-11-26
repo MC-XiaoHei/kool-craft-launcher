@@ -13,19 +13,31 @@ pub struct FnTask<F, Fut, In, Out> {
     id: Uuid,
     name: String,
     weight: u64,
+    hidden_in_view: bool,
     func: F,
     _p: PhantomData<fn(In) -> (Out, Fut)>,
 }
 
 impl<F, Fut, In, Out> FnTask<F, Fut, In, Out> {
-    pub fn new(name: &str, weight: u64, func: F) -> Self {
+    pub fn new(name: &str, func: F) -> Self {
         Self {
             id: Uuid::new_v4(),
             name: name.into(),
-            weight,
+            weight: 1,
+            hidden_in_view: false,
             func,
             _p: PhantomData,
         }
+    }
+
+    pub fn with_weight(mut self, weight: u64) -> Self {
+        self.weight = weight;
+        self
+    }
+
+    pub fn hidden_in_view(mut self) -> Self {
+        self.hidden_in_view = true;
+        self
     }
 }
 
@@ -48,6 +60,9 @@ where
     }
     fn weight(&self) -> u64 {
         self.weight
+    }
+    fn is_hidden_in_view(&self) -> bool {
+        self.hidden_in_view
     }
 
     async fn run(&self, input: In, ctx: Context) -> Result<Out> {
@@ -102,6 +117,9 @@ where
     fn weight(&self) -> u64 {
         self.head.weight() + self.tail.weight()
     }
+    fn is_hidden_in_view(&self) -> bool {
+        self.head.is_hidden_in_view() && self.tail.is_hidden_in_view()
+    }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
         let head_output = self.head.run(input, ctx.clone()).await?;
@@ -139,6 +157,9 @@ impl<T: Task> Task for NamedTask<T> {
     }
     fn weight(&self) -> u64 {
         self.inner.weight()
+    }
+    fn is_hidden_in_view(&self) -> bool {
+        self.inner.is_hidden_in_view()
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
@@ -233,6 +254,9 @@ where
     }
     fn weight(&self) -> u64 {
         self.tasks.iter().map(|t| t.weight()).fold(0, u64::max)
+    }
+    fn is_hidden_in_view(&self) -> bool {
+        self.tasks.iter().all(|t| t.is_hidden_in_view())
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {
@@ -351,6 +375,9 @@ impl<T: Task> Task for Parallel<T> {
     }
     fn weight(&self) -> u64 {
         self.tasks.iter().map(|t| t.weight()).sum()
+    }
+    fn is_hidden_in_view(&self) -> bool {
+        self.tasks.iter().all(|t| t.is_hidden_in_view())
     }
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output> {

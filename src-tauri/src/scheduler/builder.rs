@@ -9,7 +9,7 @@ where
     F: Fn(In, Context) -> Fut + Send + Sync,
     Fut: Future<Output = Result<Out>> + Send,
 {
-    FnTask::new(name, 1, func)
+    FnTask::new(name, func)
 }
 
 pub fn pipeline(name: &str) -> PipelineStarter {

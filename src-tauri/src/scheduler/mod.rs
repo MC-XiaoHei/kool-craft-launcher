@@ -7,6 +7,7 @@ pub mod model;
 pub mod status;
 
 mod sync;
+mod view;
 
 pub use builder::{task, pipeline, race, parallel, TaskBuilder};
 pub use runtime::Scheduler;

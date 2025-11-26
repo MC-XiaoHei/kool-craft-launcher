@@ -18,6 +18,7 @@ pub struct TaskSnapshot {
     pub state: TaskState,
     pub progress: f64,
     pub weight: u64,
+    pub hidden_in_view: bool,
     pub message: Option<String>,
 }
 

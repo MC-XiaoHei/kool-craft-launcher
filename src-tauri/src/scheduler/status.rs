@@ -7,11 +7,12 @@ pub struct TaskStatusUpdater<'a> {
     id: Uuid,
     weight: u64,
     name: &'a str,
+    hidden_in_view: bool,
 }
 
 impl<'a> TaskStatusUpdater<'a> {
-    pub fn new(ctx: &'a Context, id: Uuid, weight: u64, name: &'a str) -> Self {
-        Self { ctx, id, weight, name }
+    pub fn new(ctx: &'a Context, id: Uuid, weight: u64, name: &'a str, hidden_in_view: bool) -> Self {
+        Self { ctx, id, weight, name, hidden_in_view }
     }
 
     pub fn pending(&self) {
@@ -36,6 +37,7 @@ impl<'a> TaskStatusUpdater<'a> {
             parent_id: self.ctx.parent_id,
             name: self.name.to_string(),
             weight: self.weight,
+            hidden_in_view: self.hidden_in_view,
             state,
             progress,
             message,

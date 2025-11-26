@@ -12,10 +12,11 @@ pub trait Task: Send + Sync {
     fn id(&self) -> Uuid;
     fn name(&self) -> &str;
     fn weight(&self) -> u64;
+    fn is_hidden_in_view(&self) -> bool;
 
     async fn run(&self, input: Self::Input, ctx: Context) -> Result<Self::Output>;
 
     fn monitor<'a>(&'a self, ctx: &'a Context) -> TaskStatusUpdater<'a> {
-        TaskStatusUpdater::new(ctx, self.id(), self.weight(), self.name())
+        TaskStatusUpdater::new(ctx, self.id(), self.weight(), self.name(), self.is_hidden_in_view())
     }
 }
