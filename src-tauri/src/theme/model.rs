@@ -1,7 +1,7 @@
-use std::fs;
-use std::path::PathBuf;
 use anyhow::{anyhow, Context};
 use log::{error, info, warn};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 pub enum EffectMode {
@@ -43,7 +43,7 @@ impl ThemeConfig {
             .ok_or_else(|| anyhow!("Unable to determine user home directory"))
     }
 
-    fn sanitize(&mut self) {
+    pub(super) fn sanitize(&mut self) {
         #[cfg(target_os = "windows")]
         if self.effect == EffectMode::Vibrancy {
             self.effect = EffectMode::Auto;
@@ -57,14 +57,12 @@ impl ThemeConfig {
         }
     }
 
-    fn try_load() -> anyhow::Result<Option<Self>> {
-        let path = Self::config_path()?;
-
+    pub(super) fn load_from(path: &Path) -> anyhow::Result<Option<Self>> {
         if !path.exists() {
             return Ok(None);
         }
 
-        let content = fs::read_to_string(&path)
+        let content = fs::read_to_string(path)
             .with_context(|| format!("Failed to read config file at {:?}", path))?;
 
         let config =
@@ -73,9 +71,7 @@ impl ThemeConfig {
         Ok(Some(config))
     }
 
-    fn try_save(&self) -> anyhow::Result<()> {
-        let path = Self::config_path()?;
-
+    pub(super) fn save_to(&self, path: &Path) -> anyhow::Result<()> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).context("Failed to ensure config directory exists")?;
         }
@@ -83,35 +79,50 @@ impl ThemeConfig {
         let content =
             serde_json::to_string_pretty(self).context("Failed to serialize theme config")?;
 
-        fs::write(&path, content)
+        fs::write(path, content)
             .with_context(|| format!("Failed to write config to {:?}", path))?;
 
         Ok(())
     }
 
     pub fn load() -> Self {
-        match Self::try_load() {
+        let path = match Self::config_path() {
+            Ok(p) => p,
+            Err(e) => {
+                warn!("Could not determine config path: {:#}, using default.", e);
+                return Self::default();
+            }
+        };
+
+        match Self::load_from(&path) {
             Ok(Some(mut config)) => {
                 config.sanitize();
-                info!("Theme configuration loaded.");
+                info!("Theme configuration loaded from {:?}", path);
                 config
             }
             Ok(None) => {
-                info!("No config file found. Using default theme.");
+                info!("No config file found at {:?}. Using default theme.", path);
                 Self::default()
             }
             Err(e) => {
-                warn!("Failed to load config: {:#}, using default.", e);
+                warn!("Failed to load config from {:?}: {:#}, using default.", path, e);
                 Self::default()
             }
         }
     }
 
     pub fn save(&self) {
-        if let Err(e) = self.try_save() {
-            error!("Failed to save theme config: {:#}", e);
-        } else {
-            info!("Theme configuration saved.");
+        match Self::config_path() {
+            Ok(path) => {
+                if let Err(e) = self.save_to(&path) {
+                    error!("Failed to save theme config to {:?}: {:#}", path, e);
+                } else {
+                    info!("Theme configuration saved to {:?}.", path);
+                }
+            }
+            Err(e) => {
+                error!("Could not determine config path to save: {:#}", e);
+            }
         }
     }
 }

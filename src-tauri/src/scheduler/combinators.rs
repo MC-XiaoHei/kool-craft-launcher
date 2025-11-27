@@ -47,7 +47,7 @@ where
     In: Send + Clone + 'static,
     Out: Send + 'static,
     F: Fn(In, Context) -> Fut + Send + Sync,
-    Fut: Future<Output=Result<Out>> + Send,
+    Fut: Future<Output = Result<Out>> + Send,
 {
     type Input = In;
     type Output = Out;
@@ -85,8 +85,8 @@ where
 
 pub struct Chain<A, B> {
     id: Uuid,
-    pub head: A,
-    pub tail: B,
+    pub(super) head: A,
+    pub(super) tail: B,
 }
 
 impl<A, B> Chain<A, B> {
@@ -103,14 +103,16 @@ impl<A, B> Chain<A, B> {
 impl<A, B> Task for Chain<A, B>
 where
     A: Task,
-    B: Task<Input=A::Output>,
+    B: Task<Input = A::Output>,
 {
     type Input = A::Input;
     type Output = B::Output;
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn id(&self) -> Uuid {
         self.id
     }
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn name(&self) -> &str {
         "Chain"
     }
@@ -130,8 +132,8 @@ where
 
 pub struct NamedTask<T> {
     id: Uuid,
-    pub name: String,
-    pub inner: T,
+    name: String,
+    pub(super) inner: T,
 }
 
 impl<T> NamedTask<T> {
@@ -181,61 +183,10 @@ impl<T: Task> Task for NamedTask<T> {
     }
 }
 
-pub struct GroupBuilder<T: Task, Target> {
-    name: String,
-    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
-    _phantom: PhantomData<Target>,
-}
-
-impl<T: Task, Target> GroupBuilder<T, Target> {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.into(),
-            tasks: Vec::new(),
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn add<U>(mut self, task: U) -> Self
-    where
-        U: Task<Input=T::Input, Output=T::Output> + 'static,
-    {
-        self.tasks.push(Arc::new(task));
-        self
-    }
-
-    pub fn extend<I, U>(mut self, iter: I) -> Self
-    where
-        I: IntoIterator<Item=U>,
-        U: Task<Input=T::Input, Output=T::Output> + 'static,
-    {
-        for task in iter {
-            self.tasks.push(Arc::new(task));
-        }
-        self
-    }
-}
-
 pub struct Race<T: Task> {
-    id: Uuid,
-    name: String,
-    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
-}
-
-impl<T: Task> Race<T> {
-    pub fn builder(name: &str) -> GroupBuilder<T, Self> {
-        GroupBuilder::<T, Self>::new(name)
-    }
-}
-
-impl<T: Task> GroupBuilder<T, Race<T>> {
-    pub fn build(self) -> Race<T> {
-        Race {
-            id: Uuid::new_v4(),
-            name: self.name,
-            tasks: self.tasks,
-        }
-    }
+    pub(super) id: Uuid,
+    pub(super) name: String,
+    pub(super) tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
 }
 
 #[async_trait]
@@ -293,17 +244,17 @@ where
 }
 
 pub struct Parallel<T: Task> {
-    id: Uuid,
-    name: String,
-    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
+    pub(super) id: Uuid,
+    pub(super) name: String,
+    pub(super) tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
 }
 
 impl<T: Task> Parallel<T> {
-    pub fn builder(name: &str) -> GroupBuilder<T, Self> {
-        GroupBuilder::<T, Self>::new(name)
-    }
-
-    fn spawn_subtasks(&self, input: T::Input, ctx: &Context) -> JoinSet<(usize, Result<T::Output>)> {
+    fn spawn_subtasks(
+        &self,
+        input: T::Input,
+        ctx: &Context,
+    ) -> JoinSet<(usize, Result<T::Output>)> {
         let mut set = JoinSet::new();
 
         for (i, task) in self.tasks.iter().enumerate() {
@@ -323,7 +274,10 @@ impl<T: Task> Parallel<T> {
         set
     }
 
-    async fn collect_results(&self, set: &mut JoinSet<(usize, Result<T::Output>)>) -> Result<Vec<T::Output>> {
+    async fn collect_results(
+        &self,
+        set: &mut JoinSet<(usize, Result<T::Output>)>,
+    ) -> Result<Vec<T::Output>> {
         let mut indexed_results = Vec::with_capacity(self.tasks.len());
         let mut error = None;
 
@@ -349,16 +303,6 @@ impl<T: Task> Parallel<T> {
 
         indexed_results.sort_by_key(|(i, _)| *i);
         Ok(indexed_results.into_iter().map(|(_, val)| val).collect())
-    }
-}
-
-impl<T: Task> GroupBuilder<T, Parallel<T>> {
-    pub fn build(self) -> Parallel<T> {
-        Parallel {
-            id: Uuid::new_v4(),
-            name: self.name,
-            tasks: self.tasks,
-        }
     }
 }
 

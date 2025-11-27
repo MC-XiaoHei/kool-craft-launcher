@@ -7,8 +7,8 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 pub struct Scheduler {
-    pub(crate) semaphore: Arc<Semaphore>,
-    pub(crate) registry: TaskRegistry,
+    pub(super) semaphore: Arc<Semaphore>,
+    pub(super) registry: TaskRegistry,
 }
 
 impl Scheduler {

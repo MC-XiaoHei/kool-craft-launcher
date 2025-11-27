@@ -6,10 +6,10 @@ use crate::scheduler::model::TaskRegistry;
 
 #[derive(Clone)]
 pub struct Context {
-    pub(crate) race_ctx: Option<RaceContext>,
-    pub(crate) semaphore: Arc<Semaphore>,
-    pub(crate) registry: TaskRegistry,
-    pub(crate) parent_id: Option<Uuid>,
+    pub(super) race_ctx: Option<RaceContext>,
+    pub(super) semaphore: Arc<Semaphore>,
+    pub(super) registry: TaskRegistry,
+    pub(super) parent_id: Option<Uuid>,
 }
 
 impl Context {
