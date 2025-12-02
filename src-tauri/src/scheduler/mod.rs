@@ -5,8 +5,8 @@ pub mod builder;
 pub mod runtime;
 pub mod model;
 pub mod status;
+pub mod sync;
 
-mod sync;
 mod view;
 mod tests;
 
