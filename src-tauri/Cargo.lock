@@ -1814,6 +1814,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-log",
  "tokio",
+ "tokio-util",
  "uuid",
  "wallpaper",
  "window-vibrancy 0.7.1",
@@ -4102,6 +4103,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
+ "futures-util",
  "pin-project-lite",
  "tokio",
 ]

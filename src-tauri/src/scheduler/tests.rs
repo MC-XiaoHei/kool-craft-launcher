@@ -9,9 +9,10 @@ use anyhow::anyhow;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::time::sleep;
+use tokio::time::{sleep, timeout};
 
 mod execution_specs {
+    use tokio_util::sync::CancellationToken;
     use super::*;
 
     #[tokio::test]
@@ -42,6 +43,7 @@ mod execution_specs {
             semaphore: scheduler.semaphore.clone(),
             registry: scheduler.registry.clone(),
             parent_id: None,
+            cancel_token: CancellationToken::new(),
         };
 
         let result = pipeline_task.run(10, ctx).await;
@@ -86,6 +88,95 @@ mod execution_specs {
             .then(task("hidden", |_, _| async { Ok(()) }).hidden_in_view())
             .build();
         assert!(!tail_hidden_chain.is_hidden_in_view());
+    }
+}
+
+mod cancellation_specs {
+    use super::*;
+
+    #[tokio::test]
+    async fn should_cancel_task_waiting_for_permit() {
+        let scheduler = Scheduler::new(1);
+
+        let _blocker = scheduler.run(task("blocker", |_, _| async {
+            sleep(Duration::from_millis(100)).await;
+            Ok(())
+        }));
+
+        let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
+
+        let _permit = semaphore.clone().try_acquire_owned().unwrap();
+
+        let token = tokio_util::sync::CancellationToken::new();
+        let ctx = Context {
+            race_ctx: None,
+            semaphore: semaphore.clone(),
+            registry: Arc::new(dashmap::DashMap::new()),
+            parent_id: None,
+            cancel_token: token.clone(),
+        };
+
+        let task = task("waiting_task", |_, _| async { Ok("I should not run") });
+
+        token.cancel();
+
+        let result = task.run((), ctx).await;
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "Task cancelled before start");
+    }
+
+    #[tokio::test]
+    async fn should_cancel_running_task() {
+        let ctx = Context {
+            race_ctx: None,
+            semaphore: Arc::new(tokio::sync::Semaphore::new(10)),
+            registry: Arc::new(dashmap::DashMap::new()),
+            parent_id: None,
+            cancel_token: tokio_util::sync::CancellationToken::new(),
+        };
+        let token_clone = ctx.cancel_token.clone();
+
+        let task = task("long_task", move |_, _| {
+            let token = token_clone.clone();
+            async move {
+                sleep(Duration::from_millis(10)).await;
+                token.cancel();
+                sleep(Duration::from_millis(100)).await;
+                Ok("Finished")
+            }
+        });
+
+        let result = task.run((), ctx).await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("cancelled"));
+    }
+}
+
+mod priority_specs {
+    use super::*;
+
+    #[tokio::test]
+    async fn critical_task_should_bypass_concurrency_limit() {
+        let semaphore = Arc::new(tokio::sync::Semaphore::new(1));
+        let _permit = semaphore.clone().try_acquire_owned().unwrap();
+
+        let ctx = Context {
+            race_ctx: None,
+            semaphore: semaphore.clone(),
+            registry: Arc::new(dashmap::DashMap::new()),
+            parent_id: None,
+            cancel_token: tokio_util::sync::CancellationToken::new(),
+        };
+
+        let critical_task = task("vip", |_, _| async { Ok("VIP Pass") })
+            .critical();
+
+        let result = timeout(Duration::from_millis(50), critical_task.run((), ctx)).await;
+
+        assert!(result.is_ok(), "Task timed out, meaning it was blocked!");
+        assert_eq!(result.unwrap().unwrap(), "VIP Pass");
     }
 }
 

@@ -5,6 +5,7 @@ use anyhow::Result;
 use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
+use tokio_util::sync::CancellationToken;
 
 pub struct Scheduler {
     pub(super) semaphore: Arc<Semaphore>,
@@ -28,6 +29,7 @@ impl Scheduler {
             semaphore: self.semaphore.clone(),
             registry: self.registry.clone(),
             parent_id: None,
+            cancel_token: CancellationToken::new(),
         };
 
         task.run((), ctx).await
