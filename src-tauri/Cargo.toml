@@ -7,6 +7,7 @@ edition = "2024"
 # common dependencies
 anyhow = "1.0"
 async-trait = "0.1"
+base64 = "0.22"
 dashmap = "6.1"
 dirs = "6.0"
 futures = "0.3"
@@ -15,6 +16,8 @@ os_info = "3.7"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tap = "1.0"
+tempfile = "3"
+thiserror = "2.0"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 uuid = { version = "1", features = ["v4", "serde"] }
@@ -24,7 +27,6 @@ tauri = { version = "2.9", features = [] }
 tauri-plugin-log = "2.7"
 
 # theme dependencies
-base64 = "0.22"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 window-vibrancy = "0.7.1"
 wallpaper = "3.2"
