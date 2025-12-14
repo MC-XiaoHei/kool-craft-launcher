@@ -111,7 +111,7 @@ impl<T: Task> TaskBuilder<T> {
 
 pub struct GroupBuilder<T: Task, Target> {
     name: String,
-    tasks: Vec<Arc<dyn Task<Input=T::Input, Output=T::Output>>>,
+    tasks: Vec<Arc<dyn Task<Input = T::Input, Output = T::Output>>>,
     _phantom: PhantomData<Target>,
 }
 
@@ -126,7 +126,7 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 
     pub fn add<U>(mut self, task: U) -> Self
     where
-        U: Task<Input=T::Input, Output=T::Output> + 'static,
+        U: Task<Input = T::Input, Output = T::Output> + 'static,
     {
         self.tasks.push(Arc::new(task));
         self
@@ -134,8 +134,8 @@ impl<T: Task, Target> GroupBuilder<T, Target> {
 
     pub fn extend<I, U>(mut self, iter: I) -> Self
     where
-        I: IntoIterator<Item=U>,
-        U: Task<Input=T::Input, Output=T::Output> + 'static,
+        I: IntoIterator<Item = U>,
+        U: Task<Input = T::Input, Output = T::Output> + 'static,
     {
         for task in iter {
             self.tasks.push(Arc::new(task));

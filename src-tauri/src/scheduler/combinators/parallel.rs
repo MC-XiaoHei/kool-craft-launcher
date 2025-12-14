@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use crate::scheduler::Task;
+use crate::scheduler::context::Context;
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
-use anyhow::{anyhow, Result};
+use std::sync::Arc;
 use tokio::task::JoinSet;
 use uuid::Uuid;
-use crate::scheduler::context::Context;
-use crate::scheduler::Task;
 
 pub struct Parallel<T: Task> {
     pub(crate) id: Uuid,

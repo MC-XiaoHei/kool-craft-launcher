@@ -1,9 +1,9 @@
+use crate::scheduler::model::TaskRegistry;
+use crate::scheduler::sync::RaceContext;
 use std::sync::Arc;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
-use crate::scheduler::sync::RaceContext;
-use crate::scheduler::model::TaskRegistry;
 
 #[derive(Clone)]
 pub struct Context {

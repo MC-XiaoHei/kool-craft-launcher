@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use log::{error, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -105,7 +105,10 @@ impl ThemeConfig {
                 Self::default()
             }
             Err(e) => {
-                warn!("Failed to load config from {:?}: {:#}, using default.", path, e);
+                warn!(
+                    "Failed to load config from {:?}: {:#}, using default.",
+                    path, e
+                );
                 Self::default()
             }
         }

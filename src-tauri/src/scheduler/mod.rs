@@ -1,16 +1,15 @@
-pub mod context;
-pub mod traits;
-pub mod combinators;
 pub mod builder;
-pub mod runtime;
+pub mod combinators;
+pub mod context;
 pub mod model;
+pub mod runtime;
 pub mod status;
 pub mod sync;
+pub mod traits;
 
-mod view;
 mod tests;
+mod view;
 
-pub use builder::{task, pipeline, race, parallel, TaskBuilder};
+pub use model::TaskNode;
 pub use runtime::Scheduler;
 pub use traits::Task;
-pub use model::{TaskNode, TaskState};

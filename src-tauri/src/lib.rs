@@ -1,8 +1,8 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-mod theme;
-mod scheduler;
 mod detector;
+mod scheduler;
+mod theme;
 
 use crate::theme::commands::register_theme_commands;
 use crate::theme::utils::apply_effect;

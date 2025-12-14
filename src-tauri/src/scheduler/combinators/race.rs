@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use async_trait::async_trait;
-use anyhow::{anyhow, Result};
-use futures::future::select_ok;
-use uuid::Uuid;
-use crate::scheduler::context::Context;
 use crate::scheduler::Task;
+use crate::scheduler::context::Context;
+use anyhow::{Result, anyhow};
+use async_trait::async_trait;
+use futures::future::select_ok;
+use std::sync::Arc;
+use uuid::Uuid;
 
 pub struct Race<T: Task> {
     pub(crate) id: Uuid,

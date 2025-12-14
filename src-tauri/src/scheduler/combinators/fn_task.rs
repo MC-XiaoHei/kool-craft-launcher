@@ -1,10 +1,10 @@
-use std::marker::PhantomData;
-use async_trait::async_trait;
+use crate::scheduler::Task;
+use crate::scheduler::context::Context;
 use anyhow::Result;
+use async_trait::async_trait;
+use std::marker::PhantomData;
 use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
-use crate::scheduler::context::Context;
-use crate::scheduler::Task;
 
 pub struct FnTask<F, Fut, In, Out> {
     id: Uuid,

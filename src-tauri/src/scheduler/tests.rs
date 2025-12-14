@@ -1,18 +1,20 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
+use crate::scheduler::builder::{TaskBuilder, parallel, pipeline, race, task};
 use crate::scheduler::context::Context;
 use crate::scheduler::model::TaskSnapshot;
+use crate::scheduler::model::TaskState;
 use crate::scheduler::sync::RaceContext;
 use crate::scheduler::*;
 use anyhow::anyhow;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tokio::time::{sleep, timeout};
+use tokio_util::sync::CancellationToken;
 
 mod execution_specs {
-    use tokio_util::sync::CancellationToken;
     use super::*;
 
     #[tokio::test]
@@ -123,7 +125,10 @@ mod cancellation_specs {
         let result = task.run((), ctx).await;
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Task cancelled before start");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Task cancelled before start"
+        );
     }
 
     #[tokio::test]
@@ -170,8 +175,7 @@ mod priority_specs {
             cancel_token: tokio_util::sync::CancellationToken::new(),
         };
 
-        let critical_task = task("vip", |_, _| async { Ok("VIP Pass") })
-            .critical();
+        let critical_task = task("vip", |_, _| async { Ok("VIP Pass") }).critical();
 
         let result = timeout(Duration::from_millis(50), critical_task.run((), ctx)).await;
 

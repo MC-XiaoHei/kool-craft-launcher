@@ -19,9 +19,7 @@ impl Scheduler {
     }
 
     pub fn get_snapshot(&self, id: Uuid) -> Option<TaskSnapshot> {
-        self.registry
-            .get(&id)
-            .map(|entry| entry.value().clone())
+        self.registry.get(&id).map(|entry| entry.value().clone())
     }
 
     fn build_nodes(

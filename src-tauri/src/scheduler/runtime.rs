@@ -22,7 +22,7 @@ impl Scheduler {
 
     pub async fn run<T>(&self, task: T) -> Result<T::Output>
     where
-        T: Task<Input=()>,
+        T: Task<Input = ()>,
     {
         let ctx = Context {
             race_ctx: None,
