@@ -10,6 +10,7 @@ pub mod traits;
 mod tests;
 mod view;
 
+pub use builder::{parallel, pipeline, race, task};
 pub use model::TaskNode;
 pub use runtime::Scheduler;
 pub use traits::Task;

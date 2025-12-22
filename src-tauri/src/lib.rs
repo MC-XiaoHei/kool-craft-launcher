@@ -4,6 +4,7 @@ mod detector;
 mod scheduler;
 mod theme;
 
+use crate::scheduler::Scheduler;
 use crate::theme::commands::register_theme_commands;
 use crate::theme::utils::apply_effect;
 use log::info;
@@ -17,6 +18,7 @@ pub fn run() {
     info!("App started at {:?}", std::time::SystemTime::now());
     tauri::Builder::default()
         .plugin(log_plugin())
+        .manage(Scheduler::new(32)) // TODO: make concurrency limit configurable
         .setup(setup_app)
         .pipe(register_theme_commands)
         .run(tauri::generate_context!())
