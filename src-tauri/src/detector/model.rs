@@ -4,21 +4,26 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct VersionManifest {
-    pub id: String,
-    #[serde(default)]
-    pub inherits_from: Option<String>,
-    pub time: String,
-    pub release_time: String,
-    #[serde(rename = "type")]
-    pub version_type: String,
-    pub main_class: String,
-    pub minecraft_arguments: Option<String>,
     pub arguments: Option<Arguments>,
+    pub minecraft_arguments: Option<String>,
+    pub asset_index: Option<AssetIndex>,
+    pub assets: Option<String>,
+    pub compliance_level: Option<u8>,
+    pub downloads: Option<Downloads>,
+    pub id: String,
+    pub java_version: Option<JavaVersion>,
     #[serde(default)]
     pub libraries: Vec<Library>,
-    pub asset_index: Option<AssetIndex>,
-    pub downloads: Option<HashMap<String, DownloadFile>>,
-    pub java_version: Option<JavaVersion>,
+    #[serde(default)]
+    pub logging: Option<Logging>,
+    pub main_class: String,
+    pub release_time: String,
+    pub time: String,
+    #[serde(rename = "type")]
+    pub version_type: String,
+    #[serde(default)]
+    pub inherits_from: Option<String>,
+    // when this struct modified, remember to update VersionManifest::merge_with
 }
 
 impl VersionManifest {
@@ -84,6 +89,16 @@ pub enum ArgumentValueContent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetIndex {
+    pub id: String,
+    pub sha1: String,
+    pub size: u64,
+    pub url: String,
+    pub total_size: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct Library {
     pub name: String,
     #[serde(default)]
@@ -111,12 +126,14 @@ pub struct DownloadFile {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct AssetIndex {
-    pub id: String,
-    pub sha1: String,
-    pub size: u64,
-    pub url: String,
-    pub total_size: u64,
+pub struct Downloads {
+    pub client: DownloadFile,
+    #[serde(default)]
+    pub client_mappings: Option<DownloadFile>,
+    #[serde(default)]
+    pub server: Option<DownloadFile>,
+    #[serde(default)]
+    pub server_mappings: Option<DownloadFile>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -131,14 +148,31 @@ pub struct Rule {
     pub action: String,
     #[serde(default)]
     pub os: Option<HashMap<String, String>>,
+    #[serde(default)]
+    pub features: Option<HashMap<String, bool>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct Logging {
+    #[serde(default)]
+    pub client: Option<LoggingConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct LoggingConfig {
+    pub argument: String,
+    pub file: DownloadFile,
+    #[serde(rename = "type")]
+    pub file_type: String,
 }
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use crate::detector::VersionManifest;
-    use crate::detector::model::{ArgumentValue, Arguments, AssetIndex, DownloadFile, JavaVersion};
-    use std::collections::HashMap;
+    use crate::detector::model::{
+        ArgumentValue, Arguments, AssetIndex, DownloadFile, Downloads, JavaVersion,
+    };
 
     struct ManifestBuilder {
         manifest: VersionManifest,
@@ -158,8 +192,11 @@ mod tests {
                     arguments: None,
                     libraries: vec![],
                     asset_index: None,
+                    assets: None,
+                    compliance_level: None,
                     downloads: None,
                     java_version: None,
+                    logging: None,
                 },
             }
         }
@@ -185,13 +222,13 @@ mod tests {
             self
         }
 
-        fn with_download_entry(mut self, key: &str, file: DownloadFile) -> Self {
-            if self.manifest.downloads.is_none() {
-                self.manifest.downloads = Some(HashMap::new());
-            }
-            if let Some(downloads) = &mut self.manifest.downloads {
-                downloads.insert(key.to_string(), file);
-            }
+        fn with_client_jar(mut self, client: DownloadFile) -> Self {
+            self.manifest.downloads = Some(Downloads {
+                client,
+                client_mappings: None,
+                server: None,
+                server_mappings: None,
+            });
             self
         }
 
@@ -342,19 +379,17 @@ mod tests {
             size: 12345,
             url: "http://dummy".to_string(),
         };
-        let download_file_key = "client".to_string();
 
         let mut base = ManifestBuilder::new("base").build();
         let child = ManifestBuilder::new("child")
-            .with_download_entry(&download_file_key, download_file.clone())
+            .with_client_jar(download_file.clone())
             .build();
 
         base.merge_with(&child);
 
         let downloads = base.downloads.unwrap();
-        let retrieved_file = downloads.get(&download_file_key).unwrap();
         assert_eq!(
-            retrieved_file, &download_file,
+            download_file, downloads.client,
             "Downloads should be overridden by child"
         );
     }
