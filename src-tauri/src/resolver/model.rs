@@ -72,6 +72,7 @@ pub struct Arguments {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum ArgumentValue {
     Simple(String),
@@ -99,6 +100,7 @@ pub struct AssetIndex {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Library {
     pub name: String,
     #[serde(default)]
@@ -110,6 +112,7 @@ pub struct Library {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct LibraryDownloads {
     pub artifact: Option<DownloadFile>,
     #[serde(default)]
@@ -117,6 +120,7 @@ pub struct LibraryDownloads {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadFile {
     pub path: Option<String>,
     pub sha1: String,
@@ -144,6 +148,7 @@ pub struct JavaVersion {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Rule {
     pub action: String,
     #[serde(default)]
@@ -153,12 +158,14 @@ pub struct Rule {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Logging {
     #[serde(default)]
     pub client: Option<LoggingConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct LoggingConfig {
     pub argument: String,
     pub file: DownloadFile,

@@ -1,8 +1,9 @@
 use dashmap::DashMap;
 use std::sync::Arc;
+use serde::Serialize;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 pub enum TaskState {
     Pending,
     Running,
@@ -10,7 +11,8 @@ pub enum TaskState {
     Failed,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskSnapshot {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,
@@ -43,7 +45,8 @@ impl TaskSnapshot {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskNode {
     pub id: Uuid,
     pub name: String,

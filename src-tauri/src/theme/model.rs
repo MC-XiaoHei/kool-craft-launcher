@@ -2,8 +2,9 @@ use anyhow::{Context, anyhow};
 use log::{error, info, warn};
 use std::fs;
 use std::path::{Path, PathBuf};
+use serde::{Deserialize, Serialize};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum EffectMode {
     Auto,
     Mica,
@@ -11,14 +12,15 @@ pub enum EffectMode {
     Wallpaper,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum ThemeMode {
     Auto,
     Dark,
     Light,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct ThemeConfig {
     pub effect: EffectMode,
     pub theme: ThemeMode,
