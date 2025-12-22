@@ -1,4 +1,4 @@
-use crate::detector::{
+use crate::resolver::{
     FileSystemScanner, VersionLoadError, VersionLoader, VersionManifest, VersionScanner,
 };
 use futures::future::join_all;

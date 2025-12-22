@@ -1,9 +1,9 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
-use crate::detector::VersionLoadError;
-use crate::detector::model::ArgumentValue;
-use crate::detector::resolver::resolve_all_versions_default;
+use crate::resolver::VersionLoadError;
+use crate::resolver::model::ArgumentValue;
+use crate::resolver::resolver::resolve_all_versions_default;
 use tempfile::TempDir;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;

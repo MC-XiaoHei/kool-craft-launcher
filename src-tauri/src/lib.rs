@@ -1,6 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-mod detector;
+mod launcher;
+mod resolver;
 mod scheduler;
 mod theme;
 

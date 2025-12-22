@@ -169,8 +169,8 @@ pub struct LoggingConfig {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use crate::detector::VersionManifest;
-    use crate::detector::model::{
+    use crate::resolver::VersionManifest;
+    use crate::resolver::model::{
         ArgumentValue, Arguments, AssetIndex, DownloadFile, Downloads, JavaVersion,
     };
 

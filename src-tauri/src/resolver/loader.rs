@@ -1,5 +1,5 @@
-use crate::detector::model::VersionManifest;
-use crate::detector::scanner::VersionMetadata;
+use crate::resolver::model::VersionManifest;
+use crate::resolver::scanner::VersionMetadata;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use tokio::fs;
