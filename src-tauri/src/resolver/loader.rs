@@ -20,10 +20,27 @@ pub enum VersionLoadError {
     CircularDependency(String),
 }
 
-pub struct VersionLoader;
+pub trait VersionLoader {
+    async fn load_and_resolve(
+        &self,
+        metadata: &VersionMetadata,
+        root_dir: &Path,
+    ) -> Result<VersionManifest, VersionLoadError>;
+}
 
-impl VersionLoader {
-    pub async fn load_and_resolve(
+pub struct FileSystemVersionLoader;
+
+impl FileSystemVersionLoader {
+    fn resolve_json_path(&self, root_dir: &Path, version_id: &str) -> PathBuf {
+        root_dir
+            .join("versions")
+            .join(version_id)
+            .join(format!("{}.json", version_id))
+    }
+}
+
+impl VersionLoader for FileSystemVersionLoader {
+    async fn load_and_resolve(
         &self,
         metadata: &VersionMetadata,
         root_dir: &Path,
@@ -67,13 +84,6 @@ impl VersionLoader {
 
         Ok(resolved)
     }
-
-    fn resolve_json_path(&self, root_dir: &Path, version_id: &str) -> PathBuf {
-        root_dir
-            .join("versions")
-            .join(version_id)
-            .join(format!("{}.json", version_id))
-    }
 }
 
 #[cfg(test)]
@@ -88,7 +98,7 @@ mod tests {
     async fn test_load_error_io_not_found() {
         let temp_dir = tempdir().unwrap();
         let root_path = temp_dir.path();
-        let loader = VersionLoader;
+        let loader = FileSystemVersionLoader;
 
         let meta = VersionMetadata {
             id: "non-existent".to_string(),
@@ -109,7 +119,7 @@ mod tests {
     async fn test_load_error_json_parse() {
         let temp_dir = tempdir().unwrap();
         let root_path = temp_dir.path();
-        let loader = VersionLoader;
+        let loader = FileSystemVersionLoader;
 
         let version_dir = root_path.join("versions").join("bad_json");
         fs::create_dir_all(&version_dir).await.unwrap();

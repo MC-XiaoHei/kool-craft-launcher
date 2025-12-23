@@ -3,20 +3,22 @@ use crate::resolver::{
 };
 use futures::future::join_all;
 use std::path::Path;
+use crate::resolver::loader::FileSystemVersionLoader;
 
 pub async fn resolve_all_versions_default(
     minecraft_dir: &Path,
 ) -> Vec<Result<VersionManifest, VersionLoadError>> {
-    resolve_all_versions(&FileSystemScanner, &VersionLoader, minecraft_dir).await
+    resolve_all_versions(&FileSystemScanner, &FileSystemVersionLoader, minecraft_dir).await
 }
 
-pub async fn resolve_all_versions<S>(
+pub async fn resolve_all_versions<S, L>(
     scanner: &S,
-    loader: &VersionLoader,
+    loader: &L,
     minecraft_dir: &Path,
 ) -> Vec<Result<VersionManifest, VersionLoadError>>
 where
     S: VersionScanner + ?Sized,
+    L: VersionLoader + ?Sized,
 {
     let meta_list = match scanner.scan_versions(minecraft_dir).await {
         Ok(list) => list,
