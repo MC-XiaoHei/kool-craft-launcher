@@ -1,4 +1,4 @@
-use crate::scheduler::context::Context;
+use crate::scheduler::Context;
 use crate::scheduler::model::{TaskSnapshot, TaskState};
 use uuid::Uuid;
 

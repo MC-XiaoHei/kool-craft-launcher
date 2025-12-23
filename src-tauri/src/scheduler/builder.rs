@@ -7,12 +7,24 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub fn task<F, Fut, In, Out>(name: &str, func: F) -> FnTask<F, Fut, In, Out>
+pub fn task_with_ctx<F, Fut, In, Out>(name: impl Into<String>, func: F) -> FnTask<F, Fut, In, Out>
 where
     F: Fn(In, Context) -> Fut + Send + Sync,
     Fut: Future<Output = Result<Out>> + Send,
 {
-    FnTask::new(name, func)
+    FnTask::new(&name.into(), func)
+}
+
+pub fn task<F, Fut, In, Out>(
+    name: impl Into<String>,
+    func: F,
+) -> FnTask<impl Fn(In, Context) -> Fut + Send + Sync, Fut, In, Out>
+where
+    F: Fn(In) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = Result<Out>> + Send + 'static,
+    In: Send + 'static,
+{
+    FnTask::new(&name.into(), move |input: In, _: Context| func(input))
 }
 
 pub fn pipeline(name: &str) -> PipelineStarter {

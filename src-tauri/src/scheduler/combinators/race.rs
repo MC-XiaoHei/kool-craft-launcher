@@ -1,5 +1,5 @@
+use crate::scheduler::Context;
 use crate::scheduler::Task;
-use crate::scheduler::context::Context;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use futures::future::select_ok;

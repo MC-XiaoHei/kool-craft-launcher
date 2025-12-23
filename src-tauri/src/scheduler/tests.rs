@@ -1,8 +1,8 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
+use crate::scheduler::Context;
 use crate::scheduler::builder::{TaskBuilder, parallel, pipeline, race, task};
-use crate::scheduler::context::Context;
 use crate::scheduler::model::TaskSnapshot;
 use crate::scheduler::model::TaskState;
 use crate::scheduler::sync::RaceContext;
@@ -20,7 +20,7 @@ mod execution_specs {
     #[tokio::test]
     async fn should_execute_single_task_successfully() {
         let scheduler = Scheduler::new(1);
-        let task = task("simple", |_, _| async { Ok(42) })
+        let task = task("simple", |_| async { Ok(42) })
             .with_weight(10)
             .hidden_in_view();
 
@@ -36,8 +36,8 @@ mod execution_specs {
     async fn should_pass_data_through_pipeline() {
         let scheduler = Scheduler::new(1);
         let pipeline_task = pipeline("calc_pipeline")
-            .first(task("add_one", |num: i32, _| async move { Ok(num + 1) }))
-            .then(task("double", |num: i32, _| async move { Ok(num * 2) }))
+            .first(task("add_one", |num: i32| async move { Ok(num + 1) }))
+            .then(task("double", |num: i32| async move { Ok(num * 2) }))
             .build();
 
         let ctx = Context {
@@ -56,8 +56,8 @@ mod execution_specs {
     #[tokio::test]
     async fn should_support_builder_chaining_syntax() {
         let scheduler = Scheduler::new(1);
-        let chain_task = TaskBuilder::new(task("start", |_, _| async { Ok(1) }))
-            .then(task("end", |n, _| async move { Ok(n + 1) }))
+        let chain_task = TaskBuilder::new(task("start", |_| async { Ok(1) }))
+            .then(task("end", |n| async move { Ok(n + 1) }))
             .build();
 
         let result = scheduler.run(chain_task).await;
@@ -68,26 +68,26 @@ mod execution_specs {
     #[tokio::test]
     async fn should_correctly_determine_chain_visibility() {
         let visible_chain = pipeline("visible_chain")
-            .first(task("visible", |_: (), _| async { Ok(()) }))
-            .then(task("visible_tail", |_, _| async { Ok(()) }))
+            .first(task("visible", |_: ()| async { Ok(()) }))
+            .then(task("visible_tail", |_| async { Ok(()) }))
             .build();
         assert!(!visible_chain.is_hidden_in_view());
 
         let hidden_chain = pipeline("hidden_chain")
-            .first(task("hidden", |_: (), _| async { Ok(()) }).hidden_in_view())
-            .then(task("hidden_tail", |_, _| async { Ok(()) }).hidden_in_view())
+            .first(task("hidden", |_: ()| async { Ok(()) }).hidden_in_view())
+            .then(task("hidden_tail", |_| async { Ok(()) }).hidden_in_view())
             .build();
         assert!(hidden_chain.is_hidden_in_view());
 
         let head_hidden_chain = pipeline("mixed_chain")
-            .first(task("hidden", |_: (), _| async { Ok(()) }).hidden_in_view())
-            .then(task("visible", |_, _| async { Ok(()) }))
+            .first(task("hidden", |_: ()| async { Ok(()) }).hidden_in_view())
+            .then(task("visible", |_| async { Ok(()) }))
             .build();
         assert!(!head_hidden_chain.is_hidden_in_view());
 
         let tail_hidden_chain = pipeline("mixed_chain_2")
-            .first(task("visible", |_: (), _| async { Ok(()) }))
-            .then(task("hidden", |_, _| async { Ok(()) }).hidden_in_view())
+            .first(task("visible", |_: ()| async { Ok(()) }))
+            .then(task("hidden", |_| async { Ok(()) }).hidden_in_view())
             .build();
         assert!(!tail_hidden_chain.is_hidden_in_view());
     }
@@ -100,7 +100,7 @@ mod cancellation_specs {
     async fn should_cancel_task_waiting_for_permit() {
         let scheduler = Scheduler::new(1);
 
-        let _blocker = scheduler.run(task("blocker", |_, _| async {
+        let _blocker = scheduler.run(task("blocker", |_| async {
             sleep(Duration::from_millis(100)).await;
             Ok(())
         }));
@@ -118,7 +118,7 @@ mod cancellation_specs {
             cancel_token: token.clone(),
         };
 
-        let task = task("waiting_task", |_, _| async { Ok("I should not run") });
+        let task = task("waiting_task", |_| async { Ok("I should not run") });
 
         token.cancel();
 
@@ -142,7 +142,7 @@ mod cancellation_specs {
         };
         let token_clone = ctx.cancel_token.clone();
 
-        let task = task("long_task", move |_, _| {
+        let task = task("long_task", move |_| {
             let token = token_clone.clone();
             async move {
                 sleep(Duration::from_millis(10)).await;
@@ -175,7 +175,7 @@ mod priority_specs {
             cancel_token: tokio_util::sync::CancellationToken::new(),
         };
 
-        let critical_task = task("vip", |_, _| async { Ok("VIP Pass") }).critical();
+        let critical_task = task("vip", |_| async { Ok("VIP Pass") }).critical();
 
         let result = timeout(Duration::from_millis(50), critical_task.run((), ctx)).await;
 
@@ -191,8 +191,8 @@ mod concurrency_specs {
     async fn parallel_tasks_should_aggregate_all_results() {
         let scheduler = Scheduler::new(4);
         let parallel_group = parallel("parallel_group")
-            .add(task("t1", |_, _| async { Ok("A") }))
-            .add(task("t2", |_, _| async { Ok("B") }))
+            .add(task("t1", |_| async { Ok("A") }))
+            .add(task("t2", |_| async { Ok("B") }))
             .build();
 
         let result = scheduler.run(parallel_group).await;
@@ -206,11 +206,11 @@ mod concurrency_specs {
     async fn parallel_group_should_extend_dynamically() {
         let scheduler = Scheduler::new(4);
         let dynamic_tasks = (2..=3)
-            .map(|i| task(&format!("t{}", i), move |_, _| async move { Ok(i) }))
+            .map(|i| task(format!("t{}", i), move |_| async move { Ok(i) }))
             .collect::<Vec<_>>();
 
         let group = parallel("extend_group")
-            .add(task("t1", |_, _| async { Ok(1) }))
+            .add(task("t1", |_| async { Ok(1) }))
             .extend(dynamic_tasks)
             .build();
 
@@ -225,11 +225,11 @@ mod concurrency_specs {
     async fn race_should_return_result_of_fastest_winner() {
         let scheduler = Scheduler::new(2);
         let race_group = race("race_group")
-            .add(task("slow", |_, _| async {
+            .add(task("slow", |_| async {
                 sleep(Duration::from_millis(100)).await;
                 Ok("slow")
             }))
-            .add(task("fast", |_, _| async {
+            .add(task("fast", |_| async {
                 sleep(Duration::from_millis(10)).await;
                 Ok("fast")
             }))
@@ -248,8 +248,8 @@ mod reliability_specs {
     async fn parallel_should_fail_if_any_child_fails() {
         let scheduler = Scheduler::new(4);
         let parallel_group = parallel("parallel_fail")
-            .add(task("ok", |_, _| async { Ok(()) }))
-            .add(task("fail", |_, _| async { Err(anyhow!("oops")) }))
+            .add(task("ok", |_| async { Ok(()) }))
+            .add(task("fail", |_| async { Err(anyhow!("oops")) }))
             .build();
 
         let result = scheduler.run(parallel_group).await;
@@ -265,10 +265,10 @@ mod reliability_specs {
     async fn race_should_fail_only_if_all_children_fail() {
         let scheduler = Scheduler::new(2);
         let race_group = race("race_fail")
-            .add(task("f1", |_, _| async {
+            .add(task("f1", |_| async {
                 Result::<(), _>::Err(anyhow!("e1"))
             }))
-            .add(task("f2", |_, _| async { Err(anyhow!("e2")) }))
+            .add(task("f2", |_| async { Err(anyhow!("e2")) }))
             .build();
 
         let result = scheduler.run(race_group).await;
@@ -286,8 +286,8 @@ mod reliability_specs {
     async fn should_catch_panic_in_tasks() {
         let scheduler = Scheduler::new(4);
         let group = parallel("panic_group")
-            .add(task("ok", |_, _| async { Ok(()) }))
-            .add(task("panic_task", |_, _| async {
+            .add(task("ok", |_| async { Ok(()) }))
+            .add(task("panic_task", |_| async {
                 panic!("intentional panic for coverage");
             }))
             .build();
@@ -306,7 +306,7 @@ mod internal_mechanics_specs {
     #[tokio::test]
     async fn should_retrieve_task_snapshot_by_id() {
         let scheduler = Scheduler::new(1);
-        let task = task("view_test", |_, _| async { Ok(()) });
+        let task = task("view_test", |_| async { Ok(()) });
         let task_id = task.id();
 
         let _ = scheduler.run(task).await;

@@ -1,12 +1,16 @@
+use crate::scheduler::Context;
 use crate::scheduler::Task;
-use crate::scheduler::context::Context;
 use anyhow::Result;
 use async_trait::async_trait;
 use std::marker::PhantomData;
 use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
-pub struct FnTask<F, Fut, In, Out> {
+pub struct FnTask<F, Fut, In, Out>
+where
+    F: Fn(In, Context) -> Fut + Send + Sync,
+    Fut: Future<Output = Result<Out>> + Send,
+{
     id: Uuid,
     name: String,
     weight: u64,
@@ -16,7 +20,11 @@ pub struct FnTask<F, Fut, In, Out> {
     _p: PhantomData<fn(In) -> (Out, Fut)>,
 }
 
-impl<F, Fut, In, Out> FnTask<F, Fut, In, Out> {
+impl<F, Fut, In, Out> FnTask<F, Fut, In, Out>
+where
+    F: Fn(In, Context) -> Fut + Send + Sync,
+    Fut: Future<Output = Result<Out>> + Send,
+{
     pub fn new(name: &str, func: F) -> Self {
         Self {
             id: Uuid::new_v4(),
