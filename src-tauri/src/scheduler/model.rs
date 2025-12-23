@@ -1,6 +1,6 @@
 use dashmap::DashMap;
-use std::sync::Arc;
 use serde::Serialize;
+use std::sync::Arc;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]

@@ -1,9 +1,9 @@
+use crate::resolver::loader::FileSystemVersionLoader;
 use crate::resolver::{
     FileSystemScanner, VersionLoadError, VersionLoader, VersionManifest, VersionScanner,
 };
 use futures::future::join_all;
 use std::path::Path;
-use crate::resolver::loader::FileSystemVersionLoader;
 
 pub async fn resolve_all_versions_default(
     minecraft_dir: &Path,

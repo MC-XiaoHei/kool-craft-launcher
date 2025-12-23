@@ -1,8 +1,8 @@
 use anyhow::{Context, anyhow};
 use log::{error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EffectMode {

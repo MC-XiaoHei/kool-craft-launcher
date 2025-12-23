@@ -23,7 +23,7 @@ pub struct VersionManifest {
     pub version_type: String,
     #[serde(default)]
     pub inherits_from: Option<String>,
-    // when this struct modified, remember to update VersionManifest::merge_with
+    // when this struct modified, remember to update VersionManifest::merge_with if needed
 }
 
 impl VersionManifest {
