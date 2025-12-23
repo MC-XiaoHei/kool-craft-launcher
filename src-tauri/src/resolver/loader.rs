@@ -1,5 +1,6 @@
 use crate::resolver::model::VersionManifest;
 use crate::resolver::scanner::VersionMetadata;
+use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use tokio::fs;
@@ -20,7 +21,8 @@ pub enum VersionLoadError {
     CircularDependency(String),
 }
 
-pub trait VersionLoader {
+#[async_trait]
+pub trait VersionLoader: Send + Sync {
     async fn load_and_resolve(
         &self,
         metadata: &VersionMetadata,
@@ -39,6 +41,7 @@ impl FileSystemVersionLoader {
     }
 }
 
+#[async_trait]
 impl VersionLoader for FileSystemVersionLoader {
     async fn load_and_resolve(
         &self,
