@@ -12,15 +12,21 @@ pub struct VersionMetadata {
 
 #[async_trait]
 pub trait VersionScanner: Send + Sync {
-    async fn scan_versions(&self, root_dir: &Path) -> Result<Vec<VersionMetadata>, io::Error>;
+    async fn scan_versions(
+        &self,
+        minecraft_folder: PathBuf,
+    ) -> Result<Vec<VersionMetadata>, io::Error>;
 }
 
 pub struct FileSystemScanner;
 
 #[async_trait]
 impl VersionScanner for FileSystemScanner {
-    async fn scan_versions(&self, root_dir: &Path) -> Result<Vec<VersionMetadata>, io::Error> {
-        let versions_dir = root_dir.join("versions");
+    async fn scan_versions(
+        &self,
+        minecraft_folder: PathBuf,
+    ) -> Result<Vec<VersionMetadata>, io::Error> {
+        let versions_dir = minecraft_folder.join("versions");
 
         if !fs::try_exists(&versions_dir).await? {
             return Ok(vec![]);

@@ -4,22 +4,23 @@
 use crate::resolver::VersionLoadError;
 use crate::resolver::model::ArgumentValue;
 use crate::resolver::resolver::resolve_all_versions_default;
+use std::path::PathBuf;
 use tempfile::TempDir;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
 struct TestEnvironment {
     _root: TempDir,
-    pub path: std::path::PathBuf,
+    pub path: PathBuf,
 }
 
 impl TestEnvironment {
     async fn new() -> Self {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
-        let path = temp_dir.path().to_path_buf();
+        let path_buf = temp_dir.path().to_path_buf();
         Self {
             _root: temp_dir,
-            path,
+            path: path_buf,
         }
     }
 

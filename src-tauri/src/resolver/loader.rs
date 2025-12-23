@@ -1,7 +1,7 @@
 use crate::resolver::model::VersionManifest;
 use crate::resolver::scanner::VersionMetadata;
 use async_trait::async_trait;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use thiserror::Error;
 use tokio::fs;
 
@@ -25,16 +25,16 @@ pub enum VersionLoadError {
 pub trait VersionLoader: Send + Sync {
     async fn load_and_resolve(
         &self,
-        metadata: &VersionMetadata,
-        root_dir: &Path,
+        minecraft_folder: PathBuf,
+        metadata: VersionMetadata,
     ) -> Result<VersionManifest, VersionLoadError>;
 }
 
 pub struct FileSystemVersionLoader;
 
 impl FileSystemVersionLoader {
-    fn resolve_json_path(&self, root_dir: &Path, version_id: &str) -> PathBuf {
-        root_dir
+    fn resolve_json_path(&self, minecraft_folder: PathBuf, version_id: &str) -> PathBuf {
+        minecraft_folder
             .join("versions")
             .join(version_id)
             .join(format!("{}.json", version_id))
@@ -45,8 +45,8 @@ impl FileSystemVersionLoader {
 impl VersionLoader for FileSystemVersionLoader {
     async fn load_and_resolve(
         &self,
-        metadata: &VersionMetadata,
-        root_dir: &Path,
+        minecraft_folder: PathBuf,
+        metadata: VersionMetadata,
     ) -> Result<VersionManifest, VersionLoadError> {
         let mut chain = Vec::new();
         let mut current_id = Some(metadata.id.clone());
@@ -58,7 +58,7 @@ impl VersionLoader for FileSystemVersionLoader {
             }
             visited.push(id.clone());
 
-            let json_path = self.resolve_json_path(root_dir, &id);
+            let json_path = self.resolve_json_path(minecraft_folder.clone(), &id);
 
             let content =
                 fs::read_to_string(&json_path)
@@ -109,7 +109,7 @@ mod tests {
             jar_path: root_path.join("versions/non-existent/non-existent.jar"),
         };
 
-        let result = loader.load_and_resolve(&meta, root_path).await;
+        let result = loader.load_and_resolve(root_path.to_path_buf(), meta).await;
 
         assert!(
             matches!(result, Err(VersionLoadError::Io { .. })),
@@ -141,7 +141,7 @@ mod tests {
             jar_path: version_dir.join("bad_json.jar"),
         };
 
-        let result = loader.load_and_resolve(&meta, root_path).await;
+        let result = loader.load_and_resolve(root_path.to_path_buf(), meta).await;
 
         assert!(
             matches!(result, Err(VersionLoadError::Parse { .. })),
