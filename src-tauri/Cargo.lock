@@ -1823,6 +1823,7 @@ dependencies = [
  "image",
  "log",
  "os_info",
+ "regex",
  "serde",
  "serde_json",
  "tap",
