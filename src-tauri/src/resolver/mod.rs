@@ -1,6 +1,6 @@
 pub mod loader;
 pub mod model;
-mod resolver;
+pub mod resolve;
 pub mod scanner;
 mod tests;
 

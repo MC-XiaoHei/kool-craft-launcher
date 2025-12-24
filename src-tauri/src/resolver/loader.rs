@@ -33,10 +33,11 @@ pub trait VersionLoader: Send + Sync {
 pub struct FileSystemVersionLoader;
 
 impl FileSystemVersionLoader {
-    fn resolve_json_path(&self, minecraft_folder: PathBuf, version_id: &str) -> PathBuf {
+    fn resolve_json_path(&self, minecraft_folder: PathBuf, version_id: impl Into<String>) -> PathBuf {
+        let version_id = version_id.into();
         minecraft_folder
             .join("versions")
-            .join(version_id)
+            .join(version_id.clone())
             .join(format!("{}.json", version_id))
     }
 }
@@ -104,7 +105,7 @@ mod tests {
         let loader = FileSystemVersionLoader;
 
         let meta = VersionMetadata {
-            id: "non-existent".to_string(),
+            id: "non-existent".into(),
             json_path: root_path.join("versions/non-existent/non-existent.json"),
             jar_path: root_path.join("versions/non-existent/non-existent.jar"),
         };
@@ -136,7 +137,7 @@ mod tests {
         file.flush().await.unwrap();
 
         let meta = VersionMetadata {
-            id: "bad_json".to_string(),
+            id: "bad_json".into(),
             json_path,
             jar_path: version_dir.join("bad_json.jar"),
         };

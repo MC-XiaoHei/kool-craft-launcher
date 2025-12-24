@@ -28,8 +28,8 @@ impl<T: Task> Task for NamedTask<T> {
     fn id(&self) -> Uuid {
         self.id
     }
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> String {
+        self.name.clone()
     }
     fn weight(&self) -> u64 {
         self.inner.weight()

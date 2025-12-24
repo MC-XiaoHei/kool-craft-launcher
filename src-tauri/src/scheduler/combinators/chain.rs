@@ -29,13 +29,11 @@ where
     type Input = A::Input;
     type Output = B::Output;
 
-    #[cfg_attr(coverage_nightly, coverage(off))]
     fn id(&self) -> Uuid {
         self.id
     }
-    #[cfg_attr(coverage_nightly, coverage(off))]
-    fn name(&self) -> &str {
-        "Chain"
+    fn name(&self) -> String {
+        "Chain".into()
     }
     fn weight(&self) -> u64 {
         self.head.weight() + self.tail.weight()

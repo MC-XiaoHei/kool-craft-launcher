@@ -6,7 +6,7 @@ pub struct TaskStatusUpdater<'a> {
     ctx: &'a Context,
     id: Uuid,
     weight: u64,
-    name: &'a str,
+    name: String,
     hidden_in_view: bool,
 }
 
@@ -15,14 +15,14 @@ impl<'a> TaskStatusUpdater<'a> {
         ctx: &'a Context,
         id: Uuid,
         weight: u64,
-        name: &'a str,
+        name: impl Into<String>,
         hidden_in_view: bool,
     ) -> Self {
         Self {
             ctx,
             id,
             weight,
-            name,
+            name: name.into(),
             hidden_in_view,
         }
     }

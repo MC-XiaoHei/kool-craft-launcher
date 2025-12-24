@@ -1,9 +1,10 @@
 use async_trait::async_trait;
+use log::warn;
 use std::io;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionMetadata {
     pub id: String,
     pub json_path: PathBuf,
@@ -50,7 +51,10 @@ impl VersionScanner for FileSystemScanner {
 
 impl FileSystemScanner {
     async fn inspect_directory(&self, dir: &Path) -> Option<VersionMetadata> {
-        let dir_name = dir.file_name()?.to_str()?;
+        let Some(dir_name) = dir.file_name().and_then(|n| n.to_str()) else {
+            warn!("Invalid version dir: {:?}", dir);
+            return None;
+        };
         let json_path = dir.join(format!("{}.json", dir_name));
         let jar_path = dir.join(format!("{}.jar", dir_name));
 
@@ -63,5 +67,19 @@ impl FileSystemScanner {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_scan_invalid_versions() {
+        let res = FileSystemScanner
+            .inspect_directory(Path::new(".."))
+            .await;
+        assert_eq!(res, None);
     }
 }

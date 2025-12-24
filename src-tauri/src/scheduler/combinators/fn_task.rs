@@ -25,7 +25,7 @@ where
     F: Fn(In, Context) -> Fut + Send + Sync,
     Fut: Future<Output = Result<Out>> + Send,
 {
-    pub fn new(name: &str, func: F) -> Self {
+    pub fn new(name: impl Into<String>, func: F) -> Self {
         Self {
             id: Uuid::new_v4(),
             name: name.into(),
@@ -67,8 +67,8 @@ where
     fn id(&self) -> Uuid {
         self.id
     }
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> String {
+        self.name.clone()
     }
     fn weight(&self) -> u64 {
         self.weight

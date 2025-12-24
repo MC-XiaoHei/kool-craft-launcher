@@ -10,7 +10,7 @@ pub trait Task: Send + Sync {
     type Output: Send + 'static;
 
     fn id(&self) -> Uuid;
-    fn name(&self) -> &str;
+    fn name(&self) -> String;
     fn weight(&self) -> u64;
     fn is_hidden_in_view(&self) -> bool;
 

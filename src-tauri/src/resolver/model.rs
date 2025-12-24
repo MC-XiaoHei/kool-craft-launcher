@@ -89,6 +89,15 @@ pub enum ArgumentValueContent {
     Multiple(Vec<String>),
 }
 
+impl ArgumentValueContent {
+    pub fn into_vec(self) -> Vec<String> {
+        match self {
+            ArgumentValueContent::Single(s) => vec![s],
+            ArgumentValueContent::Multiple(v) => v,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AssetIndex {
@@ -152,9 +161,20 @@ pub struct JavaVersion {
 pub struct Rule {
     pub action: String,
     #[serde(default)]
-    pub os: Option<HashMap<String, String>>,
+    pub os: Option<OsCondition>,
     #[serde(default)]
     pub features: Option<HashMap<String, bool>>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct OsCondition {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default, rename = "version")]
+    pub version_regex: Option<String>,
+    #[serde(default)]
+    pub arch: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -178,7 +198,8 @@ pub struct LoggingConfig {
 mod tests {
     use crate::resolver::VersionManifest;
     use crate::resolver::model::{
-        ArgumentValue, Arguments, AssetIndex, DownloadFile, Downloads, JavaVersion,
+        ArgumentValue, ArgumentValueContent, Arguments, AssetIndex, DownloadFile, Downloads,
+        JavaVersion,
     };
 
     struct ManifestBuilder {
@@ -186,15 +207,15 @@ mod tests {
     }
 
     impl ManifestBuilder {
-        fn new(id: &str) -> Self {
+        fn new(id: impl Into<String>) -> Self {
             Self {
                 manifest: VersionManifest {
-                    id: id.to_string(),
+                    id: id.into(),
                     inherits_from: None,
-                    time: "2023-01-01T00:00:00Z".to_string(),
-                    release_time: "2023-01-01T00:00:00Z".to_string(),
-                    version_type: "release".to_string(),
-                    main_class: "net.minecraft.client.main.Main".to_string(),
+                    time: "2023-01-01T00:00:00Z".into(),
+                    release_time: "2023-01-01T00:00:00Z".into(),
+                    version_type: "release".into(),
+                    main_class: "net.minecraft.client.main.Main".into(),
                     minecraft_arguments: None,
                     arguments: None,
                     libraries: vec![],
@@ -211,11 +232,11 @@ mod tests {
         fn with_args(mut self, game: Vec<&str>, jvm: Vec<&str>) -> Self {
             let game_args = game
                 .into_iter()
-                .map(|s| ArgumentValue::Simple(s.to_string()))
+                .map(|s| ArgumentValue::Simple(s.into()))
                 .collect();
             let jvm_args = jvm
                 .into_iter()
-                .map(|s| ArgumentValue::Simple(s.to_string()))
+                .map(|s| ArgumentValue::Simple(s.into()))
                 .collect();
             self.manifest.arguments = Some(Arguments {
                 game: game_args,
@@ -224,8 +245,8 @@ mod tests {
             self
         }
 
-        fn with_legacy_args(mut self, args: &str) -> Self {
-            self.manifest.minecraft_arguments = Some(args.to_string());
+        fn with_legacy_args(mut self, args: impl Into<String>) -> Self {
+            self.manifest.minecraft_arguments = Some(args.into());
             self
         }
 
@@ -239,12 +260,12 @@ mod tests {
             self
         }
 
-        fn with_asset_index(mut self, id: &str) -> Self {
+        fn with_asset_index(mut self, id: impl Into<String>) -> Self {
             self.manifest.asset_index = Some(AssetIndex {
-                id: id.to_string(),
-                sha1: "dummy_sha1".to_string(),
+                id: id.into(),
+                sha1: "dummy_sha1".into(),
                 size: 0,
-                url: "http://dummy".to_string(),
+                url: "http://dummy".into(),
                 total_size: 0,
             });
             self
@@ -252,7 +273,7 @@ mod tests {
 
         fn with_java(mut self, major: u32) -> Self {
             self.manifest.java_version = Some(JavaVersion {
-                component: "java-runtime-alpha".to_string(),
+                component: "java-runtime-alpha".into(),
                 major_version: major,
             });
             self
@@ -321,7 +342,7 @@ mod tests {
 
         assert_eq!(
             base.minecraft_arguments,
-            Some("new args".to_string()),
+            Some("new args".into()),
             "Legacy args should be overridden"
         );
     }
@@ -337,7 +358,7 @@ mod tests {
 
         assert_eq!(
             base.minecraft_arguments,
-            Some("old args".to_string()),
+            Some("old args".into()),
             "Should preserve base args if child is None"
         );
     }
@@ -381,10 +402,10 @@ mod tests {
     #[test]
     fn test_merge_branch_downloads_override() {
         let download_file = DownloadFile {
-            path: Some("path/to/client".to_string()),
-            sha1: "dummy_sha1".to_string(),
+            path: Some("path/to/client".into()),
+            sha1: "dummy_sha1".into(),
             size: 12345,
-            url: "http://dummy".to_string(),
+            url: "http://dummy".into(),
         };
 
         let mut base = ManifestBuilder::new("base").build();
@@ -399,5 +420,16 @@ mod tests {
             download_file, downloads.client,
             "Downloads should be overridden by child"
         );
+    }
+
+    #[test]
+    fn test_argument_value_into_vec() {
+        let single_value = "arg1".to_string();
+        let single = ArgumentValueContent::Single(single_value.clone());
+        assert_eq!(single.into_vec(), vec![single_value]);
+
+        let multiple_value = vec!["arg1".to_string(), "arg2".to_string()];
+        let multiple = ArgumentValueContent::Multiple(multiple_value.clone());
+        assert_eq!(multiple.into_vec(), multiple_value);
     }
 }

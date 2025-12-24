@@ -1,9 +1,9 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
-use crate::resolver::VersionLoadError;
+use crate::resolver::{FileSystemScanner, VersionLoadError, VersionScanner};
 use crate::resolver::model::ArgumentValue;
-use crate::resolver::resolver::resolve_all_versions_default;
+use crate::resolver::resolve::resolve_all_versions_default;
 use std::path::PathBuf;
 use tempfile::TempDir;
 use tokio::fs;
@@ -24,8 +24,9 @@ impl TestEnvironment {
         }
     }
 
-    async fn add_version(&self, id: &str, json_content: &str) {
-        let version_dir = self.path.join("versions").join(id);
+    async fn add_version(&self, id: impl Into<String>, json_content: impl Into<String>) {
+        let id = id.into();
+        let version_dir = self.path.join("versions").join(id.clone());
         fs::create_dir_all(&version_dir)
             .await
             .expect("Failed to create version dir");
@@ -34,10 +35,35 @@ impl TestEnvironment {
         let mut file = fs::File::create(file_path)
             .await
             .expect("Failed to create json file");
-        file.write_all(json_content.as_bytes())
+        file.write_all(json_content.into().as_bytes())
             .await
             .expect("Failed to write json");
     }
+}
+
+#[tokio::test]
+async fn test_version_without_json() {
+    let env = TestEnvironment::new().await;
+    let version_id = "incomplete";
+    env.add_version(version_id, "").await;
+    let incomplete_version_json = env.path.join("versions").join(version_id).join(version_id.to_owned() + ".json");
+    fs::remove_file(incomplete_version_json).await.expect("Failed to remove json file");
+    let scanner = FileSystemScanner;
+    let result = scanner.scan_versions(env.path).await;
+    assert_eq!(result.unwrap(), vec![], "Should not detect version without JSON");
+}
+
+#[tokio::test]
+async fn test_version_with_same_name_dir_instead_of_json() {
+    let env = TestEnvironment::new().await;
+    let version_id = "incomplete";
+    env.add_version(version_id, "").await;
+    let incomplete_version_json = env.path.join("versions").join(version_id).join(version_id.to_owned() + ".json");
+    fs::remove_file(incomplete_version_json.clone()).await.expect("Failed to remove json file");
+    fs::create_dir(incomplete_version_json).await.expect("Failed to create json dir");
+    let scanner = FileSystemScanner;
+    let result = scanner.scan_versions(env.path).await;
+    assert_eq!(result.unwrap(), vec![], "Should not detect version with dir instead of JSON");
 }
 
 #[tokio::test]
@@ -98,11 +124,11 @@ async fn test_resolve_vanilla_and_fabric_inheritance() {
         .collect();
 
     assert!(
-        lib_names.contains(&"com.mojang:patchy:1.1".to_string()),
+        lib_names.contains(&"com.mojang:patchy:1.1".into()),
         "Should contain parent lib"
     );
     assert!(
-        lib_names.contains(&"net.fabricmc:fabric-loader:0.14".to_string()),
+        lib_names.contains(&"net.fabricmc:fabric-loader:0.14".into()),
         "Should contain child lib"
     );
 }

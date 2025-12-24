@@ -27,15 +27,15 @@ where
     FnTask::new(&name.into(), move |input: In, _: Context| func(input))
 }
 
-pub fn pipeline(name: &str) -> PipelineStarter {
+pub fn pipeline(name: impl Into<String>) -> PipelineStarter {
     PipelineStarter::new(name)
 }
 
-pub fn race(name: &str) -> RaceStarter {
+pub fn race(name: impl Into<String>) -> RaceStarter {
     RaceStarter::new(name)
 }
 
-pub fn parallel(name: &str) -> ParallelStarter {
+pub fn parallel(name: impl Into<String>) -> ParallelStarter {
     ParallelStarter::new(name)
 }
 
@@ -44,7 +44,7 @@ pub struct PipelineStarter {
 }
 
 impl PipelineStarter {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
     }
 
@@ -61,12 +61,12 @@ pub struct ParallelStarter {
 }
 
 impl ParallelStarter {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
     }
 
     pub fn add<T: Task + 'static>(self, task: T) -> GroupBuilder<T, Parallel<T>> {
-        GroupBuilder::new(&self.name).add(task)
+        GroupBuilder::new(self.name).add(task)
     }
 }
 
@@ -75,12 +75,12 @@ pub struct RaceStarter {
 }
 
 impl RaceStarter {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
     }
 
     pub fn add<T: Task + 'static>(self, task: T) -> GroupBuilder<T, Race<T>> {
-        GroupBuilder::new(&self.name).add(task)
+        GroupBuilder::new(self.name).add(task)
     }
 }
 
@@ -128,7 +128,7 @@ pub struct GroupBuilder<T: Task, Target> {
 }
 
 impl<T: Task, Target> GroupBuilder<T, Target> {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
             tasks: Vec::new(),
