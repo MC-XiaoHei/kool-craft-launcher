@@ -7,6 +7,12 @@ pub fn get_launch_task() -> impl Task {
 }
 
 async fn launch_minecraft(request: LaunchRequest) -> Result<()> {
+    let command = get_launch_command(request).await?;
     // TODO
     Ok(())
+}
+
+async fn get_launch_command(request: LaunchRequest) -> Result<Vec<String>> {
+    // TODO
+    Ok(vec![])
 }

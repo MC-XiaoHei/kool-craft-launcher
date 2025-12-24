@@ -2,6 +2,7 @@ use crate::java_runtime::model::JavaRuntime;
 use crate::launcher::model::LaunchError::IncompleteVersionManifest;
 use crate::resolver::VersionManifest;
 use crate::resolver::model::{Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging};
+use os_info::Info;
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -18,6 +19,7 @@ pub struct LaunchRequest {
     pub minecraft_folder: PathBuf,
     pub manifest: VersionManifest,
     pub java_profile: JavaRuntime,
+    pub os_info: Info,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
