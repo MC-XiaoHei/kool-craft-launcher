@@ -38,7 +38,7 @@ impl FileSystemVersionLoader {
         minecraft_folder
             .join("versions")
             .join(version_id.clone())
-            .join(format!("{}.json", version_id))
+            .join(format!("{version_id}.json"))
     }
 }
 

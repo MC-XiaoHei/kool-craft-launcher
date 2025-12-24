@@ -55,8 +55,8 @@ impl FileSystemScanner {
             warn!("Invalid version dir: {:?}", dir);
             return None;
         };
-        let json_path = dir.join(format!("{}.json", dir_name));
-        let jar_path = dir.join(format!("{}.jar", dir_name));
+        let json_path = dir.join(format!("{dir_name}.json"));
+        let jar_path = dir.join(format!("{dir_name}.jar"));
 
         if fs::try_exists(&json_path).await.unwrap_or(false) && json_path.is_file() {
             Some(VersionMetadata {

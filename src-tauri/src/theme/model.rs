@@ -65,7 +65,7 @@ impl ThemeConfig {
         }
 
         let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read config file at {:?}", path))?;
+            .with_context(|| format!("Failed to read config file at {path:?}"))?;
 
         let config =
             serde_json::from_str(&content).context("Failed to parse config JSON content")?;
@@ -82,7 +82,7 @@ impl ThemeConfig {
             serde_json::to_string_pretty(self).context("Failed to serialize theme config")?;
 
         fs::write(path, content)
-            .with_context(|| format!("Failed to write config to {:?}", path))?;
+            .with_context(|| format!("Failed to write config to {path:?}"))?;
 
         Ok(())
     }

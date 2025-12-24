@@ -60,7 +60,7 @@ where
             }
             Err(e) => {
                 monitor.failed(&e);
-                Err(anyhow!("All race tasks failed: {}", e))
+                Err(anyhow!("All race tasks failed: {e}"))
             }
         }
     }

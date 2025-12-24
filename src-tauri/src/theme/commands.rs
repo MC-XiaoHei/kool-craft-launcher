@@ -41,11 +41,11 @@ async fn get_wallpaper() -> Result<String, String> {
 
     let result = tauri::async_runtime::spawn_blocking(get_wallpaper_data_url)
         .await
-        .map_err(|e| format!("Task join error: {}", e))?;
+        .map_err(|e| format!("Task join error: {e}"))?;
 
     match &result {
         Ok(_) => info!("Wallpaper processed successfully in {:?}", start.elapsed()),
-        Err(e) => error!("Failed to process wallpaper: {:#}", e),
+        Err(e) => error!("Failed to process wallpaper: {e:}"),
     }
 
     result.map_err(|e| e.to_string())
@@ -53,10 +53,10 @@ async fn get_wallpaper() -> Result<String, String> {
 
 fn get_wallpaper_data_url() -> anyhow::Result<String> {
     let path_str =
-        wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {}", e))?;
+        wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {e}"))?;
 
     let img = ImageReader::open(&path_str)
-        .with_context(|| format!("Failed to open image at {}", path_str))?
+        .with_context(|| format!("Failed to open image at {path_str}"))?
         .decode()
         .context("Failed to decode image format")?;
 
@@ -66,5 +66,5 @@ fn get_wallpaper_data_url() -> anyhow::Result<String> {
 
     let b64 = general_purpose::STANDARD.encode(buffer.get_ref());
 
-    Ok(format!("data:image/jpeg;base64,{}", b64))
+    Ok(format!("data:image/jpeg;base64,{b64}"))
 }

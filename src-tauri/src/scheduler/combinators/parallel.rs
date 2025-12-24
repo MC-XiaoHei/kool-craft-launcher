@@ -49,12 +49,12 @@ impl<T: Task> Parallel<T> {
                 Ok((i, Ok(val))) => indexed_results.push((i, val)),
                 Ok((i, Err(e))) => {
                     set.shutdown().await;
-                    error = Some(anyhow!("Parallel task {} failed: {}", i, e));
+                    error = Some(anyhow!("Parallel task {i} failed: {e}"));
                     break;
                 }
                 Err(e) => {
                     set.shutdown().await;
-                    error = Some(anyhow!("Task panic: {}", e));
+                    error = Some(anyhow!("Task panic: {e}"));
                     break;
                 }
             }

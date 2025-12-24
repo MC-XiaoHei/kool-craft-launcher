@@ -221,7 +221,7 @@ mod concurrency_specs {
     async fn parallel_group_should_extend_dynamically() {
         let scheduler = Scheduler::new(4);
         let dynamic_tasks = (2..=3)
-            .map(|i| task(format!("t{}", i), move |_| async move { Ok(i) }))
+            .map(|i| task(format!("t{i}"), move |_| async move { Ok(i) }))
             .collect::<Vec<_>>();
 
         let group = parallel("extend_group")

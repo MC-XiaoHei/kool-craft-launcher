@@ -31,7 +31,7 @@ impl TestEnvironment {
             .await
             .expect("Failed to create version dir");
 
-        let file_path = version_dir.join(format!("{}.json", id));
+        let file_path = version_dir.join(format!("{id}.json"));
         let mut file = fs::File::create(file_path)
             .await
             .expect("Failed to create json file");
