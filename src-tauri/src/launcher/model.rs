@@ -17,7 +17,7 @@ pub enum LaunchError {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LaunchRequest {
     pub minecraft_folder: PathBuf,
-    pub manifest: VersionManifest,
+    pub manifest: LaunchVersionManifest,
     pub java_profile: JavaRuntime,
     pub os_info: Info,
 }

@@ -3,17 +3,36 @@ use os_info::{Info, Type};
 use regex::Regex;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
+pub struct RuleContext {
+    pub os_info: Info,
+    pub user_features: HashMap<String, bool>,
+}
+
+pub fn should_apply_rules(rules: Vec<Rule>, context: RuleContext) -> bool {
+    let mut should_apply = false;
+    for rule in rules {
+        if rule.should_apply(context.clone()) && !should_apply {
+            should_apply = true;
+        }
+        if !rule.should_apply(context.clone()) {
+            return false;
+        }
+    }
+    should_apply
+}
+
 impl Rule {
-    pub fn should_apply(&self, os_info: &Info, user_features: &HashMap<String, bool>) -> bool {
-        if self.is_match(os_info, user_features) {
+    pub fn should_apply(&self, context: RuleContext) -> bool {
+        if self.is_match(context.clone()) {
             self.action == "allow"
         } else {
             false
         }
     }
 
-    fn is_match(&self, os_info: &Info, user_features: &HashMap<String, bool>) -> bool {
-        self.is_os_compatible(os_info) && self.is_feature_supported(user_features)
+    fn is_match(&self, context: RuleContext) -> bool {
+        self.is_os_compatible(&context.os_info) && self.is_feature_supported(&context.user_features)
     }
 
     fn is_os_compatible(&self, os_info: &Info) -> bool {
@@ -98,8 +117,14 @@ mod tests {
         let win_info = mock_info(Type::Windows, "10.0", "x86_64");
         let linux_info = mock_info(Type::Linux, "5.15", "x86_64");
 
-        assert!(rule.should_apply(&win_info, &HashMap::new()));
-        assert!(!rule.should_apply(&linux_info, &HashMap::new()));
+        assert!(rule.should_apply(RuleContext {
+            os_info: win_info,
+            user_features: HashMap::new(),
+        }));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: linux_info,
+            user_features: HashMap::new(),
+        }));
     }
 
     #[test]
@@ -116,57 +141,108 @@ mod tests {
         let win10 = mock_info(Type::Windows, "10.0.19045", "x86_64");
         let win11 = mock_info(Type::Windows, "11.0.22621", "x86_64");
 
-        assert!(rule.should_apply(&win10, &HashMap::new()));
-        assert!(!rule.should_apply(&win11, &HashMap::new()));
+        assert!(rule.should_apply(RuleContext {
+            os_info: win10,
+            user_features: HashMap::new(),
+        }));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: win11,
+            user_features: HashMap::new(),
+        }));
     }
 
     #[test]
     fn test_arch_variations() {
         let rule_x64 = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("x64".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("x64".into()),
+                ..Default::default()
+            }),
             features: None,
         };
 
-        assert!(rule_x64.should_apply(&mock_info(Type::Linux, "5.0", "amd64"), &HashMap::new()));
+        assert!(rule_x64.should_apply(RuleContext {
+            os_info: mock_info(Type::Linux, "5.0", "amd64"),
+            user_features: HashMap::new(),
+        }));
 
         let rule_amd64 = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("amd64".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("amd64".into()),
+                ..Default::default()
+            }),
             features: None,
         };
-        assert!(rule_amd64.should_apply(&mock_info(Type::Linux, "5.0", "x86_64"), &HashMap::new()));
+        assert!(rule_amd64.should_apply(RuleContext {
+            os_info: mock_info(Type::Linux, "5.0", "x86_64"),
+            user_features: HashMap::new(),
+        }));
 
         let rule_x86 = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("x86".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("x86".into()),
+                ..Default::default()
+            }),
             features: None,
         };
-        assert!(rule_x86.should_apply(&mock_info(Type::Windows, "10.0", "i386"), &HashMap::new()));
-        assert!(rule_x86.should_apply(&mock_info(Type::Windows, "10.0", "x86"), &HashMap::new()));
+        assert!(rule_x86.should_apply(RuleContext {
+            os_info: mock_info(Type::Windows, "10.0", "i386"),
+            user_features: HashMap::new(),
+        }));
+        assert!(rule_x86.should_apply(RuleContext {
+            os_info: mock_info(Type::Windows, "10.0", "x86"),
+            user_features: HashMap::new(),
+        }));
 
         let rule_arm = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("arm64".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("arm64".into()),
+                ..Default::default()
+            }),
             features: None,
         };
-        assert!(rule_arm.should_apply(&mock_info(Type::Macos, "14.0", "aarch64"), &HashMap::new()));
-        assert!(rule_arm.should_apply(&mock_info(Type::Macos, "14.0", "arm64"), &HashMap::new()));
+        assert!(rule_arm.should_apply(RuleContext {
+            os_info: mock_info(Type::Macos, "14.0", "aarch64"),
+            user_features: HashMap::new(),
+        }));
+        assert!(rule_arm.should_apply(RuleContext {
+            os_info: mock_info(Type::Macos, "14.0", "arm64"),
+            user_features: HashMap::new(),
+        }));
 
         let rule_aarch = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("aarch64".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("aarch64".into()),
+                ..Default::default()
+            }),
             features: None,
         };
-        assert!(rule_aarch.should_apply(&mock_info(Type::Macos, "14.0", "aarch64"), &HashMap::new()));
-        assert!(rule_aarch.should_apply(&mock_info(Type::Macos, "14.0", "arm64"), &HashMap::new()));
+        assert!(rule_aarch.should_apply(RuleContext {
+            os_info: mock_info(Type::Macos, "14.0", "aarch64"),
+            user_features: HashMap::new(),
+        }));
+        assert!(rule_aarch.should_apply(RuleContext {
+            os_info: mock_info(Type::Macos, "14.0", "arm64"),
+            user_features: HashMap::new(),
+        }));
 
         let rule_not_match = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { arch: Some("wtf".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                arch: Some("wtf".into()),
+                ..Default::default()
+            }),
             features: None,
         };
-        assert!(!rule_not_match.should_apply(&mock_info(Type::Macos, "14.0", "arm64"), &HashMap::new()));
+        assert!(!rule_not_match.should_apply(RuleContext {
+            os_info: mock_info(Type::Macos, "14.0", "arm64"),
+            user_features: HashMap::new(),
+        }));
     }
 
     #[test]
@@ -185,10 +261,16 @@ mod tests {
         user_f.insert("is_demo_user".into(), true);
         user_f.insert("has_custom_resolution".into(), false);
 
-        assert!(rule.should_apply(&mock_info(Type::Linux, "1.0", "x64"), &user_f));
+        assert!(rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Linux, "1.0", "x64"),
+            user_features: user_f.clone(),
+        }));
 
         user_f.remove("is_demo_user");
-        assert!(!rule.should_apply(&mock_info(Type::Linux, "1.0", "x64"), &user_f));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Linux, "1.0", "x64"),
+            user_features: user_f.clone(),
+        }));
     }
 
     #[test]
@@ -202,8 +284,10 @@ mod tests {
             features: None,
         };
 
-        let info = mock_info(Type::Windows, "10.0", "x64");
-        assert!(!rule.should_apply(&info, &HashMap::new()));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Windows, "10.0", "x64"),
+            user_features: HashMap::new(),
+        }));
     }
 
     #[test]
@@ -213,7 +297,10 @@ mod tests {
 
         let rule = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { name: Some("osx".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                name: Some("osx".into()),
+                ..Default::default()
+            }),
             features: Some(rf),
         };
 
@@ -221,14 +308,23 @@ mod tests {
         let mut user_f = HashMap::new();
         user_f.insert("has_custom_resolution".into(), true);
 
-        assert!(rule.should_apply(&osx_info, &user_f));
+        assert!(rule.should_apply(RuleContext {
+            os_info: osx_info.clone(),
+            user_features: user_f.clone(),
+        }));
 
         user_f.insert("has_custom_resolution".into(), false);
-        assert!(!rule.should_apply(&osx_info, &user_f));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: osx_info.clone(),
+            user_features: user_f.clone(),
+        }));
 
         user_f.insert("has_custom_resolution".into(), true);
         let win_info = mock_info(Type::Windows, "10.0", "x64");
-        assert!(!rule.should_apply(&win_info, &user_f));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: win_info,
+            user_features: user_f,
+        }));
     }
 
     #[test]
@@ -239,20 +335,27 @@ mod tests {
             features: None,
         };
 
-        let info = mock_info(Type::Linux, "1.0", "x64");
-        assert!(!rule.should_apply(&info, &HashMap::new()));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Linux, "1.0", "x64"),
+            user_features: HashMap::new(),
+        }))
     }
 
     #[test]
     fn test_unknown_os_handling() {
         let rule = Rule {
             action: "allow".into(),
-            os: Some(OsCondition { name: Some("linux".into()), ..Default::default() }),
+            os: Some(OsCondition {
+                name: Some("linux".into()),
+                ..Default::default()
+            }),
             features: None,
         };
 
-        let unknown_info = mock_info(Type::Unknown, "1.0", "x64");
-        assert!(!rule.should_apply(&unknown_info, &HashMap::new()));
+        assert!(!rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Unknown, "1.0", "x64"),
+            user_features: HashMap::new(),
+        }))
     }
 
     #[test]
@@ -263,7 +366,9 @@ mod tests {
             features: None,
         };
 
-        let info = mock_info(Type::Windows, "10.0", "x64");
-        assert!(rule.should_apply(&info, &HashMap::new()));
+        assert!(rule.should_apply(RuleContext {
+            os_info: mock_info(Type::Windows, "10.0", "x64"),
+            user_features: HashMap::new(),
+        }));
     }
 }
