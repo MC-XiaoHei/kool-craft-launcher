@@ -188,4 +188,11 @@ mod tests {
             result
         );
     }
+
+    #[test]
+    fn test_merge_chain_returns_default_when_empty() {
+        let loader = FileSystemVersionLoader;
+        let result = loader.merge_chain(Vec::new());
+        assert_eq!(result, VersionManifest::default());
+    }
 }
