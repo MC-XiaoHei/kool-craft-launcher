@@ -11,19 +11,16 @@ impl ArgumentsInfo {
         metadata: ArgumentsContext,
         custom_game_arguments: Vec<String>,
     ) -> Vec<String> {
-        match self {
+        let mut args = match self {
             ArgumentsInfo::Legacy(game_args) => game_args
                 .split_whitespace()
                 .map(|s| s.to_string())
                 .collect(),
             ArgumentsInfo::Modern(args) => args.get_raw_game_arguments(context),
-        }
-        .pipe(|args| metadata.replace_args_placeholders(args))
-        .pipe(|mut args| {
-            args.append(&mut custom_game_arguments.clone());
-            args
-        })
-        .pipe(Self::deduplicate_args)
+        };
+        args = metadata.replace_args_placeholders(args);
+        args.append(&mut custom_game_arguments.clone());
+        Self::deduplicate_args(args)
     }
 
     pub fn get_jvm_arguments(
@@ -32,39 +29,35 @@ impl ArgumentsInfo {
         metadata: ArgumentsContext,
         custom_jvm_arguments: Vec<String>,
     ) -> Vec<String> {
-        match self {
+        let mut args = match self {
             ArgumentsInfo::Legacy(_) => vec![], // TODO
             ArgumentsInfo::Modern(args) => args.get_raw_jvm_arguments(context),
-        }
-        .pipe(|args| metadata.replace_args_placeholders(args))
-        .pipe(|mut args| {
-            args.append(&mut custom_jvm_arguments.clone());
-            args
-        })
-        .pipe(Self::deduplicate_args)
+        };
+        args = metadata.replace_args_placeholders(args);
+        args.append(&mut custom_jvm_arguments.clone());
+        Self::deduplicate_args(args)
     }
 
     fn deduplicate_args(args: Vec<String>) -> Vec<String> {
         const ARG_PREFIX: char = '-';
+        let mut seen = HashSet::new();
         let mut result = Vec::with_capacity(args.len());
-        let mut seen_keys = HashSet::with_capacity(args.len());
 
-        let mut i = args.len();
-        while i > 0 {
-            i -= 1;
-            let current = &args[i];
+        let mut iter = args.into_iter().rev().peekable();
 
-            if i > 0 && args[i - 1].starts_with(ARG_PREFIX) && !current.starts_with(ARG_PREFIX) {
-                let key = &args[i - 1];
-                let value = current;
+        while let Some(arg) = iter.next() {
+            let is_pair_value = !arg.starts_with(ARG_PREFIX)
+                && iter.peek().is_some_and(|k| k.starts_with(ARG_PREFIX));
 
-                if seen_keys.insert(key.clone()) {
-                    result.push(value.clone());
-                    result.push(key.clone());
+            if is_pair_value {
+                if let Some(key) = iter.next()
+                    && seen.insert(key.clone())
+                {
+                    result.push(arg);
+                    result.push(key);
                 }
-                i -= 1;
-            } else if seen_keys.insert(current.clone()) {
-                result.push(current.clone());
+            } else if seen.insert(arg.clone()) {
+                result.push(arg);
             }
         }
 
