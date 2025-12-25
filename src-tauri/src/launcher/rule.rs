@@ -1,8 +1,8 @@
+use crate::launcher::model::RuleContext;
 use crate::resolver::model::Rule;
 use os_info::{Info, Type};
 use regex::Regex;
 use std::collections::HashMap;
-use crate::launcher::model::RuleContext;
 
 pub fn should_apply_rules(rules: Vec<Rule>, context: RuleContext) -> bool {
     let mut should_apply = false;

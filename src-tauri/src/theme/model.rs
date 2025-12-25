@@ -81,8 +81,7 @@ impl ThemeConfig {
         let content =
             serde_json::to_string_pretty(self).context("Failed to serialize theme config")?;
 
-        fs::write(path, content)
-            .with_context(|| format!("Failed to write config to {path:?}"))?;
+        fs::write(path, content).with_context(|| format!("Failed to write config to {path:?}"))?;
 
         Ok(())
     }

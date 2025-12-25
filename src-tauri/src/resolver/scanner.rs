@@ -77,9 +77,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_scan_invalid_versions() {
-        let res = FileSystemScanner
-            .inspect_directory(Path::new(".."))
-            .await;
+        let res = FileSystemScanner.inspect_directory(Path::new("..")).await;
         assert_eq!(res, None);
     }
 }

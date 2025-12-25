@@ -52,8 +52,7 @@ async fn get_wallpaper() -> Result<String, String> {
 }
 
 fn get_wallpaper_data_url() -> anyhow::Result<String> {
-    let path_str =
-        wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {e}"))?;
+    let path_str = wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {e}"))?;
 
     let img = ImageReader::open(&path_str)
         .with_context(|| format!("Failed to open image at {path_str}"))?

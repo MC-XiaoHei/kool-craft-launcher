@@ -30,8 +30,8 @@ mod execution_specs {
         let result = scheduler.run(task).await;
 
         assert_eq!(result.unwrap(), 42);
-
     }
+
     #[tokio::test]
     async fn task_with_ctx_should_execute_successfully_too() {
         let scheduler = Scheduler::new(1);

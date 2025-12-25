@@ -16,7 +16,8 @@ impl JavaRuntime {
     }
 
     pub fn get_java_executable_path_str(&self) -> Result<String> {
-        let str = self.get_java_executable_path()
+        let str = self
+            .get_java_executable_path()
             .to_str()
             .ok_or(InvalidJavaRuntime)?
             .to_string();

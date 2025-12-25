@@ -1,5 +1,5 @@
 use crate::launcher::model::LaunchRequest;
-use crate::scheduler::{task, Task};
+use crate::scheduler::{Task, task};
 use anyhow::Result;
 
 pub fn get_launch_task() -> impl Task {

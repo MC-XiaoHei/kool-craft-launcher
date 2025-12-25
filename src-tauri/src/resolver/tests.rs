@@ -1,9 +1,9 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
-use crate::resolver::{FileSystemScanner, VersionLoadError, VersionScanner};
 use crate::resolver::model::ArgumentValue;
 use crate::resolver::resolve::resolve_all_versions_default;
+use crate::resolver::{FileSystemScanner, VersionLoadError, VersionScanner};
 use std::path::PathBuf;
 use tempfile::TempDir;
 use tokio::fs;
@@ -46,11 +46,21 @@ async fn test_version_without_json() {
     let env = TestEnvironment::new().await;
     let version_id = "incomplete";
     env.add_version(version_id, "").await;
-    let incomplete_version_json = env.path.join("versions").join(version_id).join(version_id.to_owned() + ".json");
-    fs::remove_file(incomplete_version_json).await.expect("Failed to remove json file");
+    let incomplete_version_json = env
+        .path
+        .join("versions")
+        .join(version_id)
+        .join(version_id.to_owned() + ".json");
+    fs::remove_file(incomplete_version_json)
+        .await
+        .expect("Failed to remove json file");
     let scanner = FileSystemScanner;
     let result = scanner.scan_versions(env.path).await;
-    assert_eq!(result.unwrap(), vec![], "Should not detect version without JSON");
+    assert_eq!(
+        result.unwrap(),
+        vec![],
+        "Should not detect version without JSON"
+    );
 }
 
 #[tokio::test]
@@ -58,12 +68,24 @@ async fn test_version_with_same_name_dir_instead_of_json() {
     let env = TestEnvironment::new().await;
     let version_id = "incomplete";
     env.add_version(version_id, "").await;
-    let incomplete_version_json = env.path.join("versions").join(version_id).join(version_id.to_owned() + ".json");
-    fs::remove_file(incomplete_version_json.clone()).await.expect("Failed to remove json file");
-    fs::create_dir(incomplete_version_json).await.expect("Failed to create json dir");
+    let incomplete_version_json = env
+        .path
+        .join("versions")
+        .join(version_id)
+        .join(version_id.to_owned() + ".json");
+    fs::remove_file(incomplete_version_json.clone())
+        .await
+        .expect("Failed to remove json file");
+    fs::create_dir(incomplete_version_json)
+        .await
+        .expect("Failed to create json dir");
     let scanner = FileSystemScanner;
     let result = scanner.scan_versions(env.path).await;
-    assert_eq!(result.unwrap(), vec![], "Should not detect version with dir instead of JSON");
+    assert_eq!(
+        result.unwrap(),
+        vec![],
+        "Should not detect version with dir instead of JSON"
+    );
 }
 
 #[tokio::test]

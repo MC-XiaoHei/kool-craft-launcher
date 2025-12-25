@@ -1,6 +1,7 @@
 use crate::java_runtime::model::JavaRuntime;
 use crate::resolver::VersionManifest;
 use crate::resolver::model::{Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging};
+use LaunchError::IncompleteVersionManifest;
 use os_info::Info;
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
@@ -8,7 +9,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use thiserror::Error;
-use LaunchError::IncompleteVersionManifest;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LaunchRequest {
@@ -29,7 +29,7 @@ impl LaunchRequest {
 
     pub fn get_user_features(&self) -> HashMap<String, bool> {
         HashMap::from([
-            ("is_demo_user".into(), false), // TODO
+            ("is_demo_user".into(), false),            // TODO
             ("has_quick_plays_support".into(), false), // never use quick play file
             (
                 "has_custom_resolution".into(),
@@ -240,8 +240,7 @@ mod tests {
         );
 
         let no_replace = "no_replacement_needed";
-        let result_no_replace =
-            ArgumentsContext::replace_placeholder(no_replace, &launch_args);
+        let result_no_replace = ArgumentsContext::replace_placeholder(no_replace, &launch_args);
         assert_eq!(
             result_no_replace, no_replace,
             "String without placeholder should remain unchanged"
