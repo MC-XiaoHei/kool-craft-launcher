@@ -2,12 +2,7 @@ use crate::resolver::model::Rule;
 use os_info::{Info, Type};
 use regex::Regex;
 use std::collections::HashMap;
-
-#[derive(Debug, Clone)]
-pub struct RuleContext {
-    pub os_info: Info,
-    pub user_features: HashMap<String, bool>,
-}
+use crate::launcher::model::RuleContext;
 
 pub fn should_apply_rules(rules: Vec<Rule>, context: RuleContext) -> bool {
     let mut should_apply = false;

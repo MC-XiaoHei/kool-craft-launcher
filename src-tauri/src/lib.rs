@@ -1,6 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod assets;
+mod auth;
 mod i18n;
 mod java_runtime;
 mod launcher;
