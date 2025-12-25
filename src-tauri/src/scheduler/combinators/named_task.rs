@@ -11,10 +11,10 @@ pub struct NamedTask<T> {
 }
 
 impl<T> NamedTask<T> {
-    pub fn new(name: String, inner: T) -> Self {
+    pub fn new(name: impl Into<String>, inner: T) -> Self {
         Self {
             id: Uuid::new_v4(),
-            name,
+            name: name.into(),
             inner,
         }
     }
