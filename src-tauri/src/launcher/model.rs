@@ -49,7 +49,7 @@ impl LaunchRequest {
             ),
         ])
     }
-    
+
     pub fn get_arguments_context(&self) -> ArgumentsContext {
         ArgumentsContext::default() // TODO
     }
@@ -127,13 +127,13 @@ impl ArgumentsContext {
             .collect()
     }
 
-    fn replace_placeholder(arg: String, map: &HashMap<String, String>) -> String {
+    fn replace_placeholder(arg: impl Into<String>, map: &HashMap<String, String>) -> String {
         static RE: LazyLock<Regex> = LazyLock::new(|| {
             Regex::new(r"\$\{([^}]+)}")
                 .expect("Internal error: Failed to compile placeholder regex") // this should never happen...
         });
 
-        RE.replace_all(&arg, |caps: &Captures| {
+        RE.replace_all(&arg.into(), |caps: &Captures| {
             let key = caps.get(1).map(|m| m.as_str()).unwrap_or("");
 
             if let Some(value) = map.get(key) {
@@ -232,7 +232,7 @@ mod tests {
         let value = "test_value".to_string();
         let launch_args = HashMap::from([("placeholder".to_string(), value.clone())]);
 
-        let result = ArgumentsContext::replace_placeholder("${placeholder}".into(), &launch_args);
+        let result = ArgumentsContext::replace_placeholder("${placeholder}", &launch_args);
         assert_eq!(
             result,
             value.clone(),
@@ -241,14 +241,14 @@ mod tests {
 
         let no_replace = "no_replacement_needed";
         let result_no_replace =
-            ArgumentsContext::replace_placeholder(no_replace.into(), &launch_args);
+            ArgumentsContext::replace_placeholder(no_replace, &launch_args);
         assert_eq!(
             result_no_replace, no_replace,
             "String without placeholder should remain unchanged"
         );
 
         let result_unknown_key =
-            ArgumentsContext::replace_placeholder("${unknown_placeholder}".into(), &launch_args);
+            ArgumentsContext::replace_placeholder("${unknown_placeholder}", &launch_args);
         assert_eq!(
             result_unknown_key, "",
             "Placeholder should be replaced with \"\" when key is unknown"
