@@ -1,3 +1,5 @@
+use crate::resolver::model::ArgumentValue::Simple;
+use crate::resolver::model::ArgumentValueContent::{Multiple, Single};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -82,6 +84,12 @@ pub enum ArgumentValue {
     },
 }
 
+impl From<&str> for ArgumentValue {
+    fn from(value: &str) -> Self {
+        Simple(value.into())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum ArgumentValueContent {
@@ -89,11 +97,23 @@ pub enum ArgumentValueContent {
     Multiple(Vec<String>),
 }
 
+impl From<&str> for ArgumentValueContent {
+    fn from(value: &str) -> Self {
+        Single(value.into())
+    }
+}
+
+impl From<Vec<&str>> for ArgumentValueContent {
+    fn from(value: Vec<&str>) -> Self {
+        Multiple(value.into_iter().map(Into::into).collect())
+    }
+}
+
 impl ArgumentValueContent {
     pub fn into_vec(self) -> Vec<String> {
         match self {
-            ArgumentValueContent::Single(s) => vec![s],
-            ArgumentValueContent::Multiple(v) => v,
+            Single(s) => vec![s],
+            Multiple(v) => v,
         }
     }
 }

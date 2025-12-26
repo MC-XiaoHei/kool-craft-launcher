@@ -1,8 +1,8 @@
 use crate::launcher::model::{ArgumentsContext, ArgumentsInfo, RuleContext};
 use crate::launcher::rule::should_apply_rules;
-use crate::resolver::model::{ArgumentValue, Arguments};
+use crate::resolver::model::{ArgumentValue, Arguments, OsCondition, Rule};
 use std::collections::HashSet;
-use tap::{Pipe, Tap};
+use ArgumentValue::Complex;
 
 impl ArgumentsInfo {
     pub fn get_game_arguments(
@@ -30,12 +30,63 @@ impl ArgumentsInfo {
         custom_jvm_arguments: Vec<String>,
     ) -> Vec<String> {
         let mut args = match self {
-            ArgumentsInfo::Legacy(_) => vec![], // TODO
+            ArgumentsInfo::Legacy(_) => Self::get_legacy_jvm_args(context),
             ArgumentsInfo::Modern(args) => args.get_raw_jvm_arguments(context),
         };
         args = metadata.replace_args_placeholders(args);
         args.append(&mut custom_jvm_arguments.clone());
         Self::deduplicate_args(args)
+    }
+
+    fn get_legacy_jvm_args(context: RuleContext) -> Vec<String> {
+        let args: Vec<ArgumentValue> = vec![
+            Complex {
+                rules: vec![Rule {
+                    action: "allow".into(),
+                    os: Some(OsCondition {
+                        name: Some("osx".into()),
+                        version_regex: None,
+                        arch: None,
+                    }),
+                    features: None,
+                }],
+                value: "-XstartOnFirstThread".into(),
+            },
+            Complex {
+                rules: vec![Rule {
+                    action: "allow".into(),
+                    os: Some(OsCondition {
+                        name: Some("windows".into()),
+                        version_regex: Some("^10\\.".into()),
+                        arch: None,
+                    }),
+                    features: None,
+                }],
+                value: vec!["-Dos.name=Windows 10", "-Dos.version=10.0"].into(),
+            },
+            Complex {
+                rules: vec![Rule {
+                    action: "allow".into(),
+                    os: Some(OsCondition {
+                        name: None,
+                        version_regex: None,
+                        arch: Some("x86".into()),
+                    }),
+                    features: None,
+                }],
+                value: "-Xss1M".into(),
+            },
+            "-Djava.library.path=${natives_directory}".into(),
+            "-Dminecraft.launcher.brand=${launcher_name}".into(),
+            "-Dminecraft.launcher.version=${launcher_version}".into(),
+            "-cp".into(),
+            "${classpath}".into(),
+        ];
+        Arguments {
+            game: vec![],
+            jvm: args,
+        }
+        .get_raw_jvm_arguments(context)
     }
 
     fn deduplicate_args(args: Vec<String>) -> Vec<String> {
@@ -90,7 +141,7 @@ impl ArgumentValue {
     pub fn get_value(&self, context: RuleContext) -> Vec<String> {
         match self {
             ArgumentValue::Simple(simple) => vec![simple.into()],
-            ArgumentValue::Complex { value, rules } => {
+            Complex { value, rules } => {
                 if should_apply_rules(rules.clone(), context.clone()) {
                     value.clone().into_vec()
                 } else {
