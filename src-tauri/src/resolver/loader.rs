@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use tap::Pipe;
 use thiserror::Error;
 use tokio::fs;
+use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
 
 #[derive(Error, Debug)]
 pub enum VersionLoadError {
@@ -41,7 +42,7 @@ impl FileSystemVersionLoader {
     ) -> PathBuf {
         let version_id = version_id.into();
         minecraft_folder
-            .join("versions")
+            .join(VERSIONS_DIR_NAME)
             .join(version_id.clone())
             .join(format!("{version_id}.json"))
     }
@@ -163,7 +164,7 @@ mod tests {
         let root_path = temp_dir.path();
         let loader = FileSystemVersionLoader;
 
-        let version_dir = root_path.join("versions").join("bad_json");
+        let version_dir = root_path.join(VERSIONS_DIR_NAME).join("bad_json");
         fs::create_dir_all(&version_dir).await.unwrap();
 
         let json_path = version_dir.join("bad_json.json");

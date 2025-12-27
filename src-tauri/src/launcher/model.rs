@@ -1,25 +1,107 @@
+use crate::auth::model::PlayerProfile;
+use crate::auth::model::UserType::DemoAccount;
+use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
+use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, VERSIONS_DIR_NAME};
 use crate::java_runtime::model::JavaRuntime;
 use crate::resolver::VersionManifest;
 use crate::resolver::model::{Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging};
-use LaunchError::IncompleteVersionManifest;
+use LaunchError::{IncompleteVersionManifest, InvalidVersionName};
+use anyhow::Result;
 use os_info::Info;
+use path_absolutize::Absolutize;
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use tap::Pipe;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LaunchRequest {
     pub minecraft_folder: PathBuf,
     pub manifest: LaunchVersionManifest,
+    pub version_name: String,
+    pub is_version_independent: bool,
     pub java_profile: JavaRuntime,
     pub custom_info: CustomInfo,
     pub os_info: Info,
+    pub player_profile: PlayerProfile,
 }
 
 impl LaunchRequest {
+    pub fn new(
+        minecraft_folder: PathBuf,
+        manifest: LaunchVersionManifest,
+        version_name: String,
+        is_version_independent: bool,
+        java_profile: JavaRuntime,
+        custom_info: CustomInfo,
+        player_profile: PlayerProfile,
+    ) -> Result<Self> {
+        let minecraft_folder = minecraft_folder.absolutize()?.to_path_buf();
+
+        let result = LaunchRequest {
+            minecraft_folder,
+            manifest,
+            version_name,
+            is_version_independent,
+            java_profile,
+            os_info: os_info::get(),
+            custom_info,
+            player_profile,
+        };
+
+        Ok(result)
+    }
+
+    pub fn get_classpath_str(&self) -> Result<String> {
+        let res = self
+            .manifest
+            .libraries
+            .iter()
+            .filter_map(|l| l.to_classpath_entry(self.get_natives_dir(), self.get_rule_context()))
+            .pipe(std::env::join_paths)?;
+        Ok(res.to_string_lossy().to_string())
+    }
+
+    pub fn get_natives_dir(&self) -> PathBuf {
+        self.minecraft_folder
+            .join(VERSIONS_DIR_NAME)
+            .join(self.version_name.clone())
+            .join(VERSIONS_DIR_NAME)
+    }
+
+    pub fn get_natives_dir_str(&self) -> String {
+        self.get_natives_dir().to_string_lossy().to_string()
+    }
+
+    pub fn get_game_dir(&self) -> PathBuf {
+        if self.is_version_independent {
+            self.minecraft_folder
+                .join(VERSIONS_DIR_NAME)
+                .join(self.version_name.clone())
+        } else {
+            self.minecraft_folder.clone()
+        }
+    }
+
+    pub fn get_game_dir_str(&self) -> Result<String> {
+        let game_dir = self.get_game_dir();
+        if !game_dir.is_absolute() {
+            return Err(InvalidVersionName(self.version_name.clone()).into());
+        }
+        Ok(game_dir.to_string_lossy().to_string())
+    }
+
+    pub fn get_assets_dir(&self) -> PathBuf {
+        self.minecraft_folder.join(ASSETS_DIR_NAME)
+    }
+
+    pub fn get_assets_dir_str(&self) -> String {
+        self.get_assets_dir().to_string_lossy().to_string()
+    }
+
     pub fn get_rule_context(&self) -> RuleContext {
         RuleContext {
             os_info: self.os_info.clone(),
@@ -29,8 +111,11 @@ impl LaunchRequest {
 
     pub fn get_user_features(&self) -> HashMap<String, bool> {
         HashMap::from([
-            ("is_demo_user".into(), false),            // TODO
             ("has_quick_plays_support".into(), false), // never use quick play file
+            (
+                "is_demo_user".into(),
+                self.player_profile.user_type == DemoAccount,
+            ),
             (
                 "has_custom_resolution".into(),
                 self.custom_info.custom_resolution.is_some(),
@@ -50,8 +135,35 @@ impl LaunchRequest {
         ])
     }
 
-    pub fn get_arguments_context(&self) -> ArgumentsContext {
-        ArgumentsContext::default() // TODO
+    pub fn get_arguments_context(&self) -> Result<ArgumentsContext> {
+        let custom = &self.custom_info;
+
+        let ctx = ArgumentsContext {
+            user_type: self.player_profile.user_type.to_string(),
+            user_properties: "{}".into(),
+            auth_player_name: self.player_profile.name.clone(),
+            auth_access_token: self.player_profile.access_token.clone(),
+            auth_uuid: self.player_profile.uuid.simple().to_string(),
+            auth_xuid: self.player_profile.xuid.clone(),
+            version_name: self.version_name.clone(),
+            version_type: SHORT_LAUNCHER_NAME.into(),
+            game_directory: self.get_game_dir_str()?,
+            natives_directory: self.get_natives_dir_str(),
+            assets_index_name: self.manifest.asset_index.id.clone(),
+            assets_root: self.get_assets_dir_str(),
+            game_assets: self.get_assets_dir_str(),
+            resolution_width: custom.custom_resolution.clone().unwrap_or_default().width,
+            resolution_height: custom.custom_resolution.clone().unwrap_or_default().height,
+            quick_play_single_player: custom.quick_play.get_single_player().unwrap_or_default(),
+            quick_play_multi_player: custom.quick_play.get_multi_player().unwrap_or_default(),
+            quick_play_realms: custom.quick_play.get_realms().unwrap_or_default(),
+            launcher_name: LAUNCHER_NAME.into(),
+            launcher_version: LAUNCHER_VERSION.into(),
+            client_id: "".into(), // TODO
+            classpath: self.get_classpath_str()?,
+        };
+        
+        Ok(ctx)
     }
 }
 
@@ -64,7 +176,7 @@ pub struct CustomInfo {
     pub custom_resolution: Option<GameResolution>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GameResolution {
     pub width: u64,
@@ -79,34 +191,60 @@ pub enum QuickPlayInfo {
     Realms(String),
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
+impl QuickPlayInfo {
+    pub fn get_single_player(&self) -> Option<String> {
+        if let QuickPlayInfo::SinglePlayer(s) = self {
+            Some(s.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_multi_player(&self) -> Option<String> {
+        if let QuickPlayInfo::MultiPlayer(s) = self {
+            Some(s.clone())
+        } else {
+            None
+        }
+    }
+
+    pub fn get_realms(&self) -> Option<String> {
+        if let QuickPlayInfo::Realms(s) = self {
+            Some(s.clone())
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub struct ArgumentsContext {
+    // yeah, I know this is VERY complex, but I don't have any better idea...
     pub user_type: String,
     pub user_properties: String,
     pub auth_player_name: String,
-    pub version_name: String,
-    pub game_directory: String,
-    pub assets_root: String,
-    pub assets_index_name: String,
-    pub auth_uuid: String,
     pub auth_access_token: String,
-    #[serde(rename = "clientid")]
-    pub client_id: String,
+    pub auth_uuid: String,
     pub auth_xuid: String,
+    pub version_name: String,
     pub version_type: String,
+    pub game_directory: String,
+    pub natives_directory: String,
+    pub assets_root: String,
+    pub game_assets: String,
+    pub assets_index_name: String,
     pub resolution_width: u64,
     pub resolution_height: u64,
-    #[serde(rename = "quickPlayPath")]
-    pub quick_play_path: String,
     #[serde(rename = "quickPlaySingleplayer")]
     pub quick_play_single_player: String,
     #[serde(rename = "quickPlayMultiplayer")]
     pub quick_play_multi_player: String,
     #[serde(rename = "quickPlayRealms")]
     pub quick_play_realms: String,
-    pub natives_directory: String,
     pub launcher_name: String,
     pub launcher_version: String,
+    #[serde(rename = "clientid")]
+    pub client_id: String,
     pub classpath: String,
 }
 
@@ -182,6 +320,8 @@ pub enum LaunchError {
     IncompleteVersionManifest,
     #[error("Invalid java runtime")]
     InvalidJavaRuntime,
+    #[error("Invalid version '{0}'")]
+    InvalidVersionName(String),
 }
 
 impl TryFrom<VersionManifest> for LaunchVersionManifest {

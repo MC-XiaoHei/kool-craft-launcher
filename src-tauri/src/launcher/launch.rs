@@ -18,7 +18,7 @@ async fn get_launch_command(request: LaunchRequest) -> Result<Vec<String>> {
     result.push(request.java_profile.get_java_executable_path_str()?);
 
     let rule_context = request.get_rule_context();
-    let arguments_context = request.get_arguments_context();
+    let arguments_context = request.get_arguments_context()?;
 
     result.append(&mut request.manifest.arguments.get_jvm_arguments(
         rule_context.clone(),

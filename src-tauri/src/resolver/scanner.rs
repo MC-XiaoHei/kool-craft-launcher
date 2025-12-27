@@ -3,6 +3,7 @@ use log::warn;
 use std::io;
 use std::path::{Path, PathBuf};
 use tokio::fs;
+use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionMetadata {
@@ -27,7 +28,7 @@ impl VersionScanner for FileSystemScanner {
         &self,
         minecraft_folder: PathBuf,
     ) -> Result<Vec<VersionMetadata>, io::Error> {
-        let versions_dir = minecraft_folder.join("versions");
+        let versions_dir = minecraft_folder.join(VERSIONS_DIR_NAME);
 
         if !fs::try_exists(&versions_dir).await? {
             return Ok(vec![]);

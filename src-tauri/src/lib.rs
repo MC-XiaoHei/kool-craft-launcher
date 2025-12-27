@@ -2,6 +2,7 @@
 
 mod assets;
 mod auth;
+mod constants;
 mod i18n;
 mod java_runtime;
 mod launcher;

@@ -1,6 +1,7 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
+use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
 use crate::resolver::model::ArgumentValue;
 use crate::resolver::resolve::resolve_all_versions_default;
 use crate::resolver::{FileSystemScanner, VersionLoadError, VersionScanner};
@@ -26,7 +27,7 @@ impl TestEnvironment {
 
     async fn add_version(&self, id: impl Into<String>, json_content: impl Into<String>) {
         let id = id.into();
-        let version_dir = self.path.join("versions").join(id.clone());
+        let version_dir = self.path.join(VERSIONS_DIR_NAME).join(id.clone());
         fs::create_dir_all(&version_dir)
             .await
             .expect("Failed to create version dir");
@@ -48,7 +49,7 @@ async fn test_version_without_json() {
     env.add_version(version_id, "").await;
     let incomplete_version_json = env
         .path
-        .join("versions")
+        .join(VERSIONS_DIR_NAME)
         .join(version_id)
         .join(version_id.to_owned() + ".json");
     fs::remove_file(incomplete_version_json)
@@ -70,7 +71,7 @@ async fn test_version_with_same_name_dir_instead_of_json() {
     env.add_version(version_id, "").await;
     let incomplete_version_json = env
         .path
-        .join("versions")
+        .join(VERSIONS_DIR_NAME)
         .join(version_id)
         .join(version_id.to_owned() + ".json");
     fs::remove_file(incomplete_version_json.clone())

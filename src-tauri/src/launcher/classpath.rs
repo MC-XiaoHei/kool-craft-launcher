@@ -1,0 +1,51 @@
+use crate::launcher::model::RuleContext;
+use crate::launcher::rule::should_apply_rules;
+use crate::resolver::model::Library;
+use std::path::PathBuf;
+
+impl Library {
+    pub fn to_classpath_entry(
+        &self,
+        libraries_dir: PathBuf,
+        rule_context: RuleContext,
+    ) -> Option<PathBuf> {
+        if self.natives.is_some() {
+            return None;
+        }
+        if let Some(rules) = self.rules.clone()
+            && !should_apply_rules(rules, rule_context)
+        {
+            return None;
+        }
+        self.get_jar_path(libraries_dir)
+    }
+
+    pub fn get_jar_path(&self, libraries_dir: PathBuf) -> Option<PathBuf> {
+        let parts: Vec<&str> = self.name.split(':').collect();
+        if parts.len() < 3 {
+            return None;
+        }
+
+        let group_id = parts[0];
+        let artifact_id = parts[1];
+        let version = parts[2];
+        let classifier = parts.get(3);
+
+        let mut path = libraries_dir.clone();
+        for segment in group_id.split('.') {
+            path.push(segment);
+        }
+
+        path.push(artifact_id);
+        path.push(version);
+
+        let file_name = if let Some(c) = classifier {
+            format!("{}-{}-{}.jar", artifact_id, version, c)
+        } else {
+            format!("{}-{}.jar", artifact_id, version)
+        };
+
+        path.push(file_name);
+        Some(path)
+    }
+}
