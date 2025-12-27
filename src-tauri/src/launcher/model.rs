@@ -26,7 +26,6 @@ pub struct LaunchRequest {
     pub player_profile: PlayerProfile,
     pub java_profile: JavaRuntime,
     pub custom_info: CustomInfo,
-    pub os_info: Info,
 }
 
 impl LaunchRequest {
@@ -41,7 +40,6 @@ impl LaunchRequest {
             minecraft_folder_info,
             manifest,
             java_profile,
-            os_info: os_info::get(),
             custom_info,
             player_profile,
         })
@@ -99,7 +97,7 @@ impl LaunchRequest {
 
     pub fn get_rule_context(&self) -> RuleContext {
         RuleContext {
-            os_info: self.os_info.clone(),
+            os_info: os_info::get(),
             user_features: self.get_user_features(),
         }
     }
