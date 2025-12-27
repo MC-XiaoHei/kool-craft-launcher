@@ -1,58 +1,50 @@
 use crate::auth::model::PlayerProfile;
-use crate::auth::model::UserType::DemoAccount;
+use crate::auth::model::UserType::Demo;
 use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
+use crate::constants::minecraft_behavior::DEFAULT_VERSION_INDEPENDENT;
 use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, VERSIONS_DIR_NAME};
 use crate::java_runtime::model::JavaRuntime;
 use crate::resolver::VersionManifest;
-use crate::resolver::model::{Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging};
-use LaunchError::{IncompleteVersionManifest, InvalidVersionName};
+use crate::resolver::model::{
+    Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging, MinecraftFolderInfo,
+};
+use crate::utils::abs_path_buf::AbsPathBuf;
+use LaunchError::IncompleteVersionManifest;
 use anyhow::Result;
 use os_info::Info;
-use path_absolutize::Absolutize;
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::LazyLock;
 use tap::Pipe;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LaunchRequest {
-    pub minecraft_folder: PathBuf,
+    pub minecraft_folder_info: MinecraftFolderInfo,
     pub manifest: LaunchVersionManifest,
-    pub version_name: String,
-    pub is_version_independent: bool,
+    pub player_profile: PlayerProfile,
     pub java_profile: JavaRuntime,
     pub custom_info: CustomInfo,
     pub os_info: Info,
-    pub player_profile: PlayerProfile,
 }
 
 impl LaunchRequest {
     pub fn new(
-        minecraft_folder: PathBuf,
+        minecraft_folder_info: MinecraftFolderInfo,
         manifest: LaunchVersionManifest,
-        version_name: String,
-        is_version_independent: bool,
         java_profile: JavaRuntime,
         custom_info: CustomInfo,
         player_profile: PlayerProfile,
     ) -> Result<Self> {
-        let minecraft_folder = minecraft_folder.absolutize()?.to_path_buf();
-
-        let result = LaunchRequest {
-            minecraft_folder,
+        Ok(LaunchRequest {
+            minecraft_folder_info,
             manifest,
-            version_name,
-            is_version_independent,
             java_profile,
             os_info: os_info::get(),
             custom_info,
             player_profile,
-        };
-
-        Ok(result)
+        })
     }
 
     pub fn get_classpath_str(&self) -> Result<String> {
@@ -65,37 +57,40 @@ impl LaunchRequest {
         Ok(res.to_string_lossy().to_string())
     }
 
-    pub fn get_natives_dir(&self) -> PathBuf {
-        self.minecraft_folder
+    pub fn get_natives_dir(&self) -> AbsPathBuf {
+        self.minecraft_folder_info
+            .path
             .join(VERSIONS_DIR_NAME)
-            .join(self.version_name.clone())
+            .join(self.manifest.id.clone())
             .join(VERSIONS_DIR_NAME)
     }
 
-    pub fn get_natives_dir_str(&self) -> String {
-        self.get_natives_dir().to_string_lossy().to_string()
+    pub fn get_natives_dir_str(&self) -> Result<String> {
+        Ok(self.get_natives_dir().to_string_lossy().to_string())
     }
 
-    pub fn get_game_dir(&self) -> PathBuf {
-        if self.is_version_independent {
-            self.minecraft_folder
+    pub fn get_game_dir(&self) -> AbsPathBuf {
+        if self
+            .minecraft_folder_info
+            .settings
+            .is_version_independent
+            .unwrap_or(DEFAULT_VERSION_INDEPENDENT)
+        {
+            self.minecraft_folder_info
+                .path
                 .join(VERSIONS_DIR_NAME)
-                .join(self.version_name.clone())
+                .join(self.manifest.id.clone())
         } else {
-            self.minecraft_folder.clone()
+            self.minecraft_folder_info.path.clone()
         }
     }
 
-    pub fn get_game_dir_str(&self) -> Result<String> {
-        let game_dir = self.get_game_dir();
-        if !game_dir.is_absolute() {
-            return Err(InvalidVersionName(self.version_name.clone()).into());
-        }
-        Ok(game_dir.to_string_lossy().to_string())
+    pub fn get_game_dir_str(&self) -> String {
+        self.get_game_dir().to_string_lossy().to_string()
     }
 
-    pub fn get_assets_dir(&self) -> PathBuf {
-        self.minecraft_folder.join(ASSETS_DIR_NAME)
+    pub fn get_assets_dir(&self) -> AbsPathBuf {
+        self.minecraft_folder_info.path.join(ASSETS_DIR_NAME)
     }
 
     pub fn get_assets_dir_str(&self) -> String {
@@ -112,10 +107,7 @@ impl LaunchRequest {
     pub fn get_user_features(&self) -> HashMap<String, bool> {
         HashMap::from([
             ("has_quick_plays_support".into(), false), // never use quick play file
-            (
-                "is_demo_user".into(),
-                self.player_profile.user_type == DemoAccount,
-            ),
+            ("is_demo_user".into(), self.player_profile.user_type == Demo),
             (
                 "has_custom_resolution".into(),
                 self.custom_info.custom_resolution.is_some(),
@@ -145,10 +137,10 @@ impl LaunchRequest {
             auth_access_token: self.player_profile.access_token.clone(),
             auth_uuid: self.player_profile.uuid.simple().to_string(),
             auth_xuid: self.player_profile.xuid.clone(),
-            version_name: self.version_name.clone(),
+            version_name: self.manifest.id.clone(),
             version_type: SHORT_LAUNCHER_NAME.into(),
-            game_directory: self.get_game_dir_str()?,
-            natives_directory: self.get_natives_dir_str(),
+            game_directory: self.get_game_dir_str(),
+            natives_directory: self.get_natives_dir_str()?,
             assets_index_name: self.manifest.asset_index.id.clone(),
             assets_root: self.get_assets_dir_str(),
             game_assets: self.get_assets_dir_str(),
@@ -162,7 +154,7 @@ impl LaunchRequest {
             client_id: "".into(), // TODO
             classpath: self.get_classpath_str()?,
         };
-        
+
         Ok(ctx)
     }
 }

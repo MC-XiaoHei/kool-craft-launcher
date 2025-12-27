@@ -1,14 +1,14 @@
 use crate::launcher::model::RuleContext;
 use crate::launcher::rule::should_apply_rules;
 use crate::resolver::model::Library;
-use std::path::PathBuf;
+use crate::utils::abs_path_buf::AbsPathBuf;
 
 impl Library {
     pub fn to_classpath_entry(
         &self,
-        libraries_dir: PathBuf,
+        libraries_dir: AbsPathBuf,
         rule_context: RuleContext,
-    ) -> Option<PathBuf> {
+    ) -> Option<AbsPathBuf> {
         if self.natives.is_some() {
             return None;
         }
@@ -20,7 +20,7 @@ impl Library {
         self.get_jar_path(libraries_dir)
     }
 
-    pub fn get_jar_path(&self, libraries_dir: PathBuf) -> Option<PathBuf> {
+    pub fn get_jar_path(&self, libraries_dir: AbsPathBuf) -> Option<AbsPathBuf> {
         let parts: Vec<&str> = self.name.split(':').collect();
         if parts.len() < 3 {
             return None;
@@ -31,7 +31,7 @@ impl Library {
         let version = parts[2];
         let classifier = parts.get(3);
 
-        let mut path = libraries_dir.clone();
+        let mut path = libraries_dir;
         for segment in group_id.split('.') {
             path.push(segment);
         }
@@ -46,6 +46,7 @@ impl Library {
         };
 
         path.push(file_name);
+
         Some(path)
     }
 }

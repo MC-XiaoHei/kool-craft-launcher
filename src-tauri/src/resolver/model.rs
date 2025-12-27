@@ -1,7 +1,28 @@
 use crate::resolver::model::ArgumentValue::Simple;
 use crate::resolver::model::ArgumentValueContent::{Multiple, Single};
+use crate::utils::abs_path_buf::AbsPathBuf;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+pub struct MinecraftFolderInfo {
+    pub path: AbsPathBuf,
+    pub settings: MinecraftFolderSettings,
+    pub version_info: Vec<VersionData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[allow(clippy::large_enum_variant)]
+#[serde(untagged)]
+pub enum VersionData {
+    Normal(VersionManifest),
+    Broken(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
+pub struct MinecraftFolderSettings {
+    pub is_version_independent: Option<bool>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]

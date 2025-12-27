@@ -1,35 +1,20 @@
-use crate::resolver::model::VersionManifest;
-use crate::resolver::scanner::VersionMetadata;
-use async_trait::async_trait;
-use std::path::PathBuf;
-use tap::Pipe;
-use thiserror::Error;
-use tokio::fs;
 use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
-
-#[derive(Error, Debug)]
-pub enum VersionLoadError {
-    #[error("I/O Error loading {path}: {source}")]
-    Io {
-        path: String,
-        source: std::io::Error,
-    },
-    #[error("JSON Parse Error in {path}: {source}")]
-    Parse {
-        path: String,
-        source: serde_json::Error,
-    },
-    #[error("Circular Dependency Detected: {0}")]
-    CircularDependency(String),
-}
+use crate::resolver::model::VersionData::{Broken, Normal};
+use crate::resolver::model::{VersionData, VersionManifest};
+use crate::resolver::scanner::VersionMetadata;
+use crate::utils::abs_path_buf::AbsPathBuf;
+use anyhow::Result;
+use async_trait::async_trait;
+use log::warn;
+use tokio::fs;
 
 #[async_trait]
 pub trait VersionLoader: Send + Sync {
     async fn load_and_resolve(
         &self,
-        minecraft_folder: PathBuf,
+        minecraft_folder: AbsPathBuf,
         metadata: VersionMetadata,
-    ) -> Result<VersionManifest, VersionLoadError>;
+    ) -> VersionData;
 }
 
 pub struct FileSystemVersionLoader;
@@ -37,9 +22,9 @@ pub struct FileSystemVersionLoader;
 impl FileSystemVersionLoader {
     fn resolve_json_path(
         &self,
-        minecraft_folder: PathBuf,
+        minecraft_folder: AbsPathBuf,
         version_id: impl Into<String>,
-    ) -> PathBuf {
+    ) -> AbsPathBuf {
         let version_id = version_id.into();
         minecraft_folder
             .join(VERSIONS_DIR_NAME)
@@ -52,80 +37,32 @@ impl FileSystemVersionLoader {
 impl VersionLoader for FileSystemVersionLoader {
     async fn load_and_resolve(
         &self,
-        minecraft_folder: PathBuf,
+        minecraft_folder: AbsPathBuf,
         metadata: VersionMetadata,
-    ) -> Result<VersionManifest, VersionLoadError> {
-        let resolved = self
-            .build_inheritance_chain(minecraft_folder, metadata.id)
-            .await?
-            .pipe(|chain| self.merge_chain(chain));
+    ) -> VersionData {
+        let id = metadata.id.clone();
+        let resolved = self.load_manifest(minecraft_folder, id.clone()).await;
 
-        Ok(resolved)
+        match resolved {
+            Err(e) => {
+                warn!("Failed to resolve minecraft version {id}: {e:?}");
+                Broken(id)
+            }
+            Ok(data) => Normal(data),
+        }
     }
 }
 
 impl FileSystemVersionLoader {
-    async fn build_inheritance_chain(
+    async fn load_manifest(
         &self,
-        root_dir: PathBuf,
-        start_id: impl Into<String>,
-    ) -> Result<Vec<VersionManifest>, VersionLoadError> {
-        let mut chain = Vec::new();
-        let mut current_id = Some(start_id.into());
-        let mut visited = Vec::new();
-
-        while let Some(id) = current_id {
-            if visited.contains(&id) {
-                return Err(VersionLoadError::CircularDependency(id));
-            }
-            visited.push(id.clone());
-
-            let manifest = self.load_single_manifest(root_dir.clone(), &id).await?;
-
-            current_id = manifest.inherits_from.clone();
-            chain.push(manifest);
-        }
-
-        Ok(chain)
-    }
-
-    async fn load_single_manifest(
-        &self,
-        root_dir: PathBuf,
+        root_dir: AbsPathBuf,
         version_id: impl Into<String>,
-    ) -> Result<VersionManifest, VersionLoadError> {
-        let json_path = self.resolve_json_path(root_dir.to_path_buf(), version_id);
-
-        let content = fs::read_to_string(&json_path)
-            .await
-            .map_err(|e| VersionLoadError::Io {
-                path: json_path.display().to_string(),
-                source: e,
-            })?;
-
-        let manifest: VersionManifest =
-            serde_json::from_str(&content).map_err(|e| VersionLoadError::Parse {
-                path: json_path.display().to_string(),
-                source: e,
-            })?;
-
+    ) -> Result<VersionManifest> {
+        let json_path = self.resolve_json_path(root_dir, version_id);
+        let content = fs::read_to_string(&json_path).await?;
+        let manifest: VersionManifest = serde_json::from_str(&content)?;
         Ok(manifest)
-    }
-
-    fn merge_chain(&self, mut chain: Vec<VersionManifest>) -> VersionManifest {
-        chain.reverse();
-
-        if chain.is_empty() {
-            return VersionManifest::default();
-        }
-
-        let mut resolved = chain[0].clone();
-
-        for child in chain.iter().skip(1) {
-            resolved.merge_with(child);
-        }
-
-        resolved
     }
 }
 
@@ -140,20 +77,14 @@ mod tests {
     #[tokio::test]
     async fn test_load_error_io_not_found() {
         let temp_dir = tempdir().unwrap();
-        let root_path = temp_dir.path();
+        let root_path = temp_dir.path().to_path_buf().try_into().unwrap();
         let loader = FileSystemVersionLoader;
 
-        let meta = VersionMetadata {
-            id: "non-existent".into(),
-            json_path: root_path.join("versions/non-existent/non-existent.json"),
-            jar_path: root_path.join("versions/non-existent/non-existent.jar"),
-        };
-
-        let result = loader.load_and_resolve(root_path.to_path_buf(), meta).await;
+        let result = loader.load_manifest(root_path, "non-existent").await;
 
         assert!(
-            matches!(result, Err(VersionLoadError::Io { .. })),
-            "Should return IO error when file is missing, but got: {:?}",
+            matches!(result, Err(_)),
+            "Should return error when file is missing, but got: {:?}",
             result
         );
     }
@@ -161,7 +92,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_error_json_parse() {
         let temp_dir = tempdir().unwrap();
-        let root_path = temp_dir.path();
+        let root_path: AbsPathBuf = temp_dir.path().to_path_buf().try_into().unwrap();
         let loader = FileSystemVersionLoader;
 
         let version_dir = root_path.join(VERSIONS_DIR_NAME).join("bad_json");
@@ -175,25 +106,12 @@ mod tests {
             .unwrap();
         file.flush().await.unwrap();
 
-        let meta = VersionMetadata {
-            id: "bad_json".into(),
-            json_path,
-            jar_path: version_dir.join("bad_json.jar"),
-        };
-
-        let result = loader.load_and_resolve(root_path.to_path_buf(), meta).await;
+        let result = loader.load_manifest(root_path, "bad_json").await;
 
         assert!(
-            matches!(result, Err(VersionLoadError::Parse { .. })),
-            "Should return Parse error on invalid JSON, but got: {:?}",
+            matches!(result, Err(_)),
+            "Should return error on invalid JSON, but got: {:?}",
             result
         );
-    }
-
-    #[test]
-    fn test_merge_chain_returns_default_when_empty() {
-        let loader = FileSystemVersionLoader;
-        let result = loader.merge_chain(Vec::new());
-        assert_eq!(result, VersionManifest::default());
     }
 }

@@ -9,6 +9,7 @@ mod launcher;
 mod resolver;
 mod scheduler;
 mod theme;
+mod utils;
 
 use crate::scheduler::Scheduler;
 use crate::theme::commands::register_theme_commands;

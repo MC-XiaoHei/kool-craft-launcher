@@ -4,6 +4,6 @@ pub mod resolve;
 pub mod scanner;
 mod tests;
 
-pub use loader::{VersionLoadError, VersionLoader};
+pub use loader::VersionLoader;
 pub use model::VersionManifest;
 pub use scanner::{FileSystemScanner, VersionScanner};

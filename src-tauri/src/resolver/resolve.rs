@@ -1,14 +1,21 @@
 use crate::resolver::loader::FileSystemVersionLoader;
-use crate::resolver::{
-    FileSystemScanner, VersionLoadError, VersionLoader, VersionManifest, VersionScanner,
-};
+use crate::resolver::model::{MinecraftFolderInfo, MinecraftFolderSettings, VersionData};
+use crate::resolver::{FileSystemScanner, VersionLoader, VersionScanner};
+use crate::utils::abs_path_buf::AbsPathBuf;
 use futures::StreamExt;
 use futures::stream;
-use std::path::Path;
 
-pub async fn resolve_all_versions_default<P: AsRef<Path>>(
-    minecraft_folder: P,
-) -> Vec<Result<VersionManifest, VersionLoadError>> {
+pub async fn resolve_minecraft_folder(minecraft_folder: AbsPathBuf) -> MinecraftFolderInfo {
+    let version_info = resolve_all_versions_default(minecraft_folder.clone()).await;
+
+    MinecraftFolderInfo {
+        path: minecraft_folder,
+        settings: MinecraftFolderSettings::default(),
+        version_info,
+    }
+}
+
+pub async fn resolve_all_versions_default(minecraft_folder: AbsPathBuf) -> Vec<VersionData> {
     resolve_all_versions(
         &FileSystemScanner,
         &FileSystemVersionLoader,
@@ -17,17 +24,15 @@ pub async fn resolve_all_versions_default<P: AsRef<Path>>(
     .await
 }
 
-pub async fn resolve_all_versions<S, L, P>(
+pub async fn resolve_all_versions<S, L>(
     scanner: &S,
     loader: &L,
-    minecraft_folder: P,
-) -> Vec<Result<VersionManifest, VersionLoadError>>
+    minecraft_folder: AbsPathBuf,
+) -> Vec<VersionData>
 where
     S: VersionScanner + ?Sized,
     L: VersionLoader + ?Sized,
-    P: AsRef<Path>,
 {
-    let minecraft_folder = minecraft_folder.as_ref().to_path_buf();
     let versions = scanner
         .scan_versions(minecraft_folder.clone())
         .await

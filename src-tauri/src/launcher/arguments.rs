@@ -1,8 +1,8 @@
 use crate::launcher::model::{ArgumentsContext, ArgumentsInfo, RuleContext};
 use crate::launcher::rule::should_apply_rules;
 use crate::resolver::model::{ArgumentValue, Arguments, OsCondition, Rule};
-use std::collections::HashSet;
 use ArgumentValue::Complex;
+use std::collections::HashSet;
 
 impl ArgumentsInfo {
     pub fn get_game_arguments(

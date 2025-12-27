@@ -12,18 +12,18 @@ pub struct PlayerProfile {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum UserType {
-    MicrosoftAccount,
-    OfflineAccount,
-    AuthLibAccount,
-    DemoAccount,
+    Microsoft,
+    Offline,
+    AuthLib,
+    Demo,
 }
 
 impl UserType {
     pub fn to_string(&self) -> String {
         match self {
-            MicrosoftAccount => "msa",
-            AuthLibAccount => "mojang",
-            OfflineAccount | DemoAccount => "legacy",
+            Microsoft => "msa",
+            AuthLib => "mojang",
+            Offline | Demo => "legacy",
         }
         .into()
     }
