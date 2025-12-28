@@ -1,4 +1,5 @@
 use UserType::*;
+use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -18,13 +19,12 @@ pub enum UserType {
     Demo,
 }
 
-impl UserType {
-    pub fn to_string(&self) -> String {
-        match self {
+impl Display for UserType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
             Microsoft => "msa",
             AuthLib => "mojang",
             Offline | Demo => "legacy",
-        }
-        .into()
+        })
     }
 }
