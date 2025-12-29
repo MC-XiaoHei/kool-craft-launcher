@@ -240,7 +240,15 @@ pub struct ArgumentsContext {
 
 impl ArgumentsContext {
     pub fn replace_args_placeholders(&self, args: Vec<String>) -> Vec<String> {
-        let map: HashMap<String, String> = serde_json::to_value(self)
+        let variable_map = self.to_variable_map();
+
+        args.into_iter()
+            .map(|arg| Self::replace_placeholder(arg, &variable_map))
+            .collect()
+    }
+
+    fn to_variable_map(&self) -> HashMap<String, String> {
+        serde_json::to_value(self)
             .unwrap_or_default()
             .as_object()
             .map(|obj| {
@@ -248,11 +256,7 @@ impl ArgumentsContext {
                     .map(|(k, v)| (k.clone(), v.as_str().unwrap_or("").to_string()))
                     .collect()
             })
-            .unwrap_or_default();
-
-        args.into_iter()
-            .map(|arg| Self::replace_placeholder(arg, &map))
-            .collect()
+            .unwrap_or_default()
     }
 
     fn replace_placeholder(arg: impl Into<String>, map: &HashMap<String, String>) -> String {
