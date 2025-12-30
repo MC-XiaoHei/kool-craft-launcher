@@ -11,14 +11,8 @@ pub struct AbsPathBuf {
 }
 
 impl AbsPathBuf {
-    pub fn new(path: PathBuf) -> Result<Self> {
-        if path.is_absolute() {
-            Ok(AbsPathBuf { buf: path })
-        } else {
-            Ok(AbsPathBuf {
-                buf: path.absolutize()?.to_path_buf(),
-            })
-        }
+    pub fn new<S: AsRef<OsStr> + ?Sized>(s: &S) -> Result<Self> {
+        Path::new(s).to_path_buf().try_into()
     }
 
     pub fn join<P: AsRef<Path>>(&self, path: P) -> Self {
@@ -61,6 +55,12 @@ impl From<AbsPathBuf> for PathBuf {
 impl TryFrom<PathBuf> for AbsPathBuf {
     type Error = anyhow::Error;
     fn try_from(path: PathBuf) -> Result<Self> {
-        AbsPathBuf::new(path)
+        if path.is_absolute() {
+            Ok(AbsPathBuf { buf: path })
+        } else {
+            Ok(AbsPathBuf {
+                buf: path.absolutize()?.to_path_buf(),
+            })
+        }
     }
 }

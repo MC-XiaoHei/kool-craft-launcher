@@ -2,7 +2,7 @@ use crate::auth::model::PlayerProfile;
 use crate::auth::model::UserType::Demo;
 use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
 use crate::constants::minecraft_behavior::DEFAULT_VERSION_INDEPENDENT;
-use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, VERSIONS_DIR_NAME};
+use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, LIBRARIES_DIR_NAME, VERSIONS_DIR_NAME};
 use crate::java_runtime::model::JavaRuntime;
 use crate::resolver::VersionManifest;
 use crate::resolver::model::{
@@ -46,13 +46,21 @@ impl LaunchRequest {
     }
 
     pub fn get_classpath_str(&self) -> Result<String> {
-        let res = self
+        let libraries = self
             .manifest
             .libraries
             .iter()
-            .filter_map(|l| l.to_classpath_entry(self.get_natives_dir(), self.get_rule_context()))
-            .pipe(std::env::join_paths)?;
-        Ok(res.to_string_lossy().to_string())
+            .filter_map(|l| l.to_classpath_entry(self.get_libraries_dir(), self.get_rule_context()))
+            .collect::<Vec<AbsPathBuf>>();
+        let game_jar = self
+            .get_game_dir()
+            .join(format!("{}.jar", self.manifest.id));
+        let res = [libraries, vec![game_jar]]
+            .concat()
+            .pipe(std::env::join_paths)?
+            .to_string_lossy()
+            .to_string();
+        Ok(res)
     }
 
     pub fn get_natives_dir(&self) -> AbsPathBuf {
@@ -61,6 +69,10 @@ impl LaunchRequest {
             .join(VERSIONS_DIR_NAME)
             .join(self.manifest.id.clone())
             .join(VERSIONS_DIR_NAME)
+    }
+
+    pub fn get_libraries_dir(&self) -> AbsPathBuf {
+        self.minecraft_folder_info.path.join(LIBRARIES_DIR_NAME)
     }
 
     pub fn get_natives_dir_str(&self) -> Result<String> {
@@ -157,7 +169,7 @@ impl LaunchRequest {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomInfo {
     pub quick_play: QuickPlayInfo,
@@ -173,9 +185,11 @@ pub struct GameResolution {
     pub height: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum QuickPlayInfo {
+    #[default]
+    None,
     SinglePlayer(String),
     MultiPlayer(String),
     Realms(String),
