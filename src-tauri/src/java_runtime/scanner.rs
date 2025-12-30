@@ -9,7 +9,7 @@ use tokio::fs::read_dir;
 
 pub async fn scan_all() -> Vec<JavaInstance> {
     let candidates = find_candidate_paths().await;
-    validate_concurrently(candidates).await
+    validate(candidates).await
 }
 
 async fn find_candidate_paths() -> HashSet<PathBuf> {
@@ -22,7 +22,7 @@ async fn find_candidate_paths() -> HashSet<PathBuf> {
     candidates
 }
 
-async fn validate_concurrently(paths: HashSet<PathBuf>) -> Vec<JavaInstance> {
+async fn validate(paths: HashSet<PathBuf>) -> Vec<JavaInstance> {
     let mut tasks = Vec::new();
 
     let paths = stream::iter(paths)
