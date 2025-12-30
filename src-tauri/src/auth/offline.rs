@@ -1,6 +1,6 @@
-use uuid::Uuid;
 use crate::auth::model::PlayerProfile;
 use crate::auth::model::UserType::Offline;
+use uuid::Uuid;
 
 pub fn generate_offline_uuid(username: impl Into<String>) -> Uuid {
     // as same as java: UUID.nameUUIDFromBytes()
