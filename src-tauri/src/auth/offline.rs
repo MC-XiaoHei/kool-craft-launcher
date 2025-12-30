@@ -27,3 +27,16 @@ impl PlayerProfile {
         }
     }
 }
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_offline_uuid() {
+        let name = "MC_XiaoHei";
+        let uuid = generate_offline_uuid(name);
+        assert_eq!(uuid.to_string(), "2a224aab-3257-3f21-873a-a161ff01dd62");
+    }
+}

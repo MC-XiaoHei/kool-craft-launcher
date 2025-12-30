@@ -1,6 +1,7 @@
 use crate::java_runtime::model::{JavaArch, JavaInstance};
 use crate::utils::executor::Executable;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
+use log::warn;
 use regex::Regex;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -9,7 +10,7 @@ use tokio::time::timeout;
 
 const JAVA_VERSION_DETECT_TIMEOUT: Duration = Duration::from_secs(3);
 
-pub async fn inspect(path: PathBuf) -> Result<JavaInstance> {
+pub async fn inspect_path(path: PathBuf) -> Option<JavaInstance> {
     let exec = Executable {
         program: path.to_string_lossy().to_string(),
         args: vec!["-version".to_string()],
@@ -17,11 +18,20 @@ pub async fn inspect(path: PathBuf) -> Result<JavaInstance> {
         kill_on_drop: true,
     };
 
-    let output = timeout(JAVA_VERSION_DETECT_TIMEOUT, exec.run_and_get_output())
-        .await
-        .context("Java version check timed out")??;
+    let result = timeout(JAVA_VERSION_DETECT_TIMEOUT, exec.run_and_get_output()).await;
 
-    parse_output(path, output)
+    if let Ok(Ok(output)) = result {
+        let parse_result = parse_output(path.clone(), output);
+        match parse_result {
+            Ok(instance) => Some(instance),
+            Err(err) => {
+                warn!("error while detecting java in {path:?}: {err:?}");
+                None
+            }
+        }
+    } else {
+        None
+    }
 }
 
 fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
@@ -42,14 +52,14 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
             .nth(1)
             .unwrap_or("0")
             .parse()
-            .unwrap_or(0)
+            .map_err(|_| anyhow!("Invalid major version: {}", version_str))?
     } else {
         version_str
             .split('.')
             .next()
             .unwrap_or("0")
             .parse()
-            .unwrap_or(0)
+            .map_err(|_| anyhow!("Invalid major version: {}", version_str))?
     };
 
     let out_lower = output.to_lowercase();
@@ -78,4 +88,111 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
         arch,
         vendor_name,
     })
+}
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    const OUTPUT_JAVA_17_HOTSPOT: &str = r#"java version "17.0.1" 2021-10-19 LTS
+Java(TM) SE Runtime Environment (build 17.0.1+12-LTS-39)
+Java HotSpot(TM) 64-Bit Server VM (build 17.0.1+12-LTS-39, mixed mode, sharing)"#;
+
+    const OUTPUT_JAVA_8_LEGACY: &str = r#"java version "1.8.0_301"
+Java(TM) SE Runtime Environment (build 1.8.0_301-b09)
+Java HotSpot(TM) 64-Bit Server VM (build 25.301-b09, mixed mode)"#;
+
+    const OUTPUT_OPENJDK_ARM64: &str = r#"openjdk version "11.0.11" 2021-04-20
+OpenJDK Runtime Environment (build 11.0.11+9-post-Ubuntu-0ubuntu2.20.04)
+OpenJDK 64-Bit Server VM (build 11.0.11+9-post-Ubuntu-0ubuntu2.20.04, mixed mode, aarch64)"#;
+
+    const OUTPUT_X86_32BIT: &str = r#"java version "1.7.0_80"
+Java(TM) SE Runtime Environment (build 1.7.0_80-b15)
+Java HotSpot(TM) Client VM (build 24.80-b15, mixed mode)"#;
+
+    fn parse(output: &str) -> Result<JavaInstance> {
+        parse_output(PathBuf::from("/mock/java"), output.to_string())
+    }
+
+    #[test]
+    fn should_parse_modern_java_major_version() {
+        let instance = parse(OUTPUT_JAVA_17_HOTSPOT).expect("Should parse valid output");
+
+        assert_eq!(instance.major_version, 17);
+        assert_eq!(instance.version, "17.0.1");
+    }
+
+    #[test]
+    fn should_parse_legacy_java_major_version() {
+        let instance = parse(OUTPUT_JAVA_8_LEGACY).expect("Should parse valid output");
+
+        assert_eq!(instance.major_version, 8);
+        assert_eq!(instance.version, "1.8.0_301");
+    }
+
+    #[test]
+    fn should_detect_x64_architecture() {
+        let instance = parse(OUTPUT_JAVA_17_HOTSPOT).unwrap();
+        assert!(matches!(instance.arch, JavaArch::X64));
+    }
+
+    #[test]
+    fn should_detect_arm64_architecture() {
+        let instance = parse(OUTPUT_OPENJDK_ARM64).unwrap();
+        assert!(matches!(instance.arch, JavaArch::Arm64));
+    }
+
+    #[test]
+    fn should_fallback_to_x86_for_32bit_vm() {
+        let instance = parse(OUTPUT_X86_32BIT).unwrap();
+        assert!(matches!(instance.arch, JavaArch::X86));
+    }
+
+    #[test]
+    fn should_extract_vendor_name_from_second_line() {
+        let instance = parse(OUTPUT_JAVA_17_HOTSPOT).unwrap();
+        assert_eq!(
+            instance.vendor_name,
+            "Java(TM) SE Runtime Environment (build 17.0.1+12-LTS-39)"
+        );
+    }
+
+    #[test]
+    fn should_handle_single_line_output_for_vendor() {
+        let output = r#"version "1.8.0""#;
+        let instance = parse(output).unwrap();
+        assert_eq!(instance.vendor_name, r#"version "1.8.0""#);
+    }
+
+    #[test]
+    fn should_handle_malformed_legacy_version_numbers_gracefully() {
+        let malformed_output = r#"version "1.Invalid.Number""#;
+
+        let instance = parse(malformed_output);
+
+        assert!(instance.is_err(), "Non-numeric version should return error");
+    }
+
+    #[test]
+    fn should_handle_malformed_modern_version_numbers_gracefully() {
+        let malformed_output = r#"version "Invalid.Number""#;
+
+        let instance = parse(malformed_output);
+
+        assert!(instance.is_err(), "Non-numeric version should return error");
+    }
+
+    #[test]
+    fn should_fail_when_output_contains_no_version_string() {
+        let invalid_output = "Command not found or invalid output";
+
+        let result = parse(invalid_output);
+
+        assert!(
+            result.is_err(),
+            "Should return error when version string is missing"
+        );
+    }
 }
