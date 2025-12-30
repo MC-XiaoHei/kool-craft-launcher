@@ -45,10 +45,10 @@ impl Scheduler {
 
     fn spawn_limit_maintainer(&self, sem: Arc<Semaphore>, mut rx: watch::Receiver<usize>) {
         tokio::spawn(async move {
-            let mut current_limit = *rx.borrow();
+            let mut current_limit = { *rx.borrow() };
 
             loop {
-                let target = *rx.borrow();
+                let target = { *rx.borrow() };
 
                 if target > current_limit {
                     let diff = target - current_limit;

@@ -31,7 +31,7 @@ pub struct VersionManifest {
     pub minecraft_arguments: Option<String>,
     pub asset_index: Option<AssetIndex>,
     pub assets: Option<String>,
-    pub compliance_level: Option<u8>,
+    pub compliance_level: Option<u32>,
     pub downloads: Option<Downloads>,
     pub id: String,
     pub java_version: Option<JavaVersion>,

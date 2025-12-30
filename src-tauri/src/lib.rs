@@ -11,21 +11,19 @@ mod scheduler;
 mod ui_theme;
 mod utils;
 
-use crate::scheduler::Scheduler;
-use crate::ui_theme::commands::register_theme_commands;
-use crate::ui_theme::utils::apply_effect;
+use crate::scheduler::commands::setup_scheduler;
+use crate::ui_theme::commands::{register_theme_commands, setup_theme};
 use log::info;
 use std::error::Error;
 use tap::Pipe;
 use tauri::plugin::TauriPlugin;
-use tauri::{App, Manager, Runtime};
-use ui_theme::model::{EffectMode, ThemeConfig};
+use tauri::{App, Runtime};
 
 pub fn run() {
     info!("App started at {:?}", std::time::SystemTime::now());
+    tauri::async_runtime::set(tokio::runtime::Handle::current());
     tauri::Builder::default()
         .plugin(log_plugin())
-        .manage(Scheduler::new(32)) // TODO: make concurrency limit configurable
         .setup(setup_app)
         .pipe(register_theme_commands)
         .run(tauri::generate_context!())
@@ -54,17 +52,7 @@ fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
 }
 
 fn setup_app(app: &mut App) -> Result<(), Box<dyn Error>> {
-    let window = app
-        .get_webview_window("main")
-        .ok_or("Main window not found")?;
-
-    let config = ThemeConfig::load();
-    apply_effect(&window, &config);
-    config.save();
-
-    if matches!(config.effect, EffectMode::Auto | EffectMode::Mica) {
-        window.show()?;
-    }
-
+    setup_scheduler(app);
+    setup_theme(app)?;
     Ok(())
 }

@@ -1,13 +1,15 @@
-use crate::ui_theme::model::ThemeConfig;
+use crate::ui_theme::model::{EffectMode, ThemeConfig};
 use crate::ui_theme::utils::apply_effect;
 use anyhow::Context;
 use base64::Engine;
 use base64::engine::general_purpose;
 use image::{ImageFormat, ImageReader};
 use log::{error, info};
+use std::error::Error;
 use std::io::Cursor;
 use std::time::Instant;
-use tauri::{Builder, Runtime, WebviewWindow, command};
+use tauri::{App, Builder, Manager, Runtime, WebviewWindow, command};
+use tokio::task::spawn_blocking;
 
 pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
@@ -15,6 +17,22 @@ pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         set_theme_config,
         get_wallpaper
     ])
+}
+
+pub fn setup_theme(app: &mut App) -> Result<(), Box<dyn Error>> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
+
+    let config = ThemeConfig::load();
+    apply_effect(&window, &config);
+    config.save();
+
+    if matches!(config.effect, EffectMode::Auto | EffectMode::Mica) {
+        window.show()?;
+    }
+
+    Ok(())
 }
 
 #[command]
@@ -27,11 +45,8 @@ async fn set_theme_config<R: Runtime>(
     window: WebviewWindow<R>,
     config: ThemeConfig,
 ) -> Result<(), String> {
-    info!("Setting ui_theme config: {:?}", config);
-
     apply_effect(&window, &config);
     config.save();
-
     Ok(())
 }
 
@@ -39,7 +54,7 @@ async fn set_theme_config<R: Runtime>(
 async fn get_wallpaper() -> Result<String, String> {
     let start = Instant::now();
 
-    let result = tauri::async_runtime::spawn_blocking(get_wallpaper_data_url)
+    let result = spawn_blocking(get_wallpaper_data_url)
         .await
         .map_err(|e| format!("Task join error: {e}"))?;
 

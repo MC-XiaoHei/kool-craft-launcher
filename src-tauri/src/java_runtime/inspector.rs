@@ -1,10 +1,10 @@
 use crate::java_runtime::model::{JavaArch, JavaInstance};
 use crate::utils::executor::Executable;
 use anyhow::{Context, Result};
+use regex::Regex;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
-use regex::Regex;
 use tokio::time::timeout;
 
 const JAVA_VERSION_DETECT_TIMEOUT: Duration = Duration::from_secs(3);

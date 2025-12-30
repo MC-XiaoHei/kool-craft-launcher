@@ -1,2 +1,2 @@
-pub mod model;
 pub mod inspector;
+pub mod model;

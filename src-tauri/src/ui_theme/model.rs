@@ -123,8 +123,6 @@ impl ThemeConfig {
             Ok(path) => {
                 if let Err(e) = self.save_to(&path) {
                     error!("Failed to save ui_theme config to {:?}: {:#}", path, e);
-                } else {
-                    info!("Theme configuration saved to {:?}.", path);
                 }
             }
             Err(e) => {
