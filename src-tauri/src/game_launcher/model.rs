@@ -7,7 +7,7 @@ use crate::game_resolver::VersionManifest;
 use crate::game_resolver::model::{
     Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging, MinecraftFolderInfo,
 };
-use crate::java_runtime::model::JavaRuntime;
+use crate::java_runtime::model::JavaInstance;
 use crate::utils::abs_path_buf::AbsPathBuf;
 use LaunchError::IncompleteVersionManifest;
 use anyhow::Result;
@@ -24,7 +24,7 @@ pub struct LaunchRequest {
     pub minecraft_folder_info: MinecraftFolderInfo,
     pub manifest: LaunchVersionManifest,
     pub player_profile: PlayerProfile,
-    pub java_profile: JavaRuntime,
+    pub java_profile: JavaInstance,
     pub custom_info: CustomInfo,
 }
 
@@ -32,7 +32,7 @@ impl LaunchRequest {
     pub fn new(
         minecraft_folder_info: MinecraftFolderInfo,
         manifest: LaunchVersionManifest,
-        java_profile: JavaRuntime,
+        java_profile: JavaInstance,
         custom_info: CustomInfo,
         player_profile: PlayerProfile,
     ) -> Result<Self> {
@@ -276,7 +276,7 @@ impl ArgumentsContext {
     fn replace_placeholder(arg: impl Into<String>, map: &HashMap<String, String>) -> String {
         static RE: LazyLock<Regex> = LazyLock::new(|| {
             Regex::new(r"\$\{([^}]+)}")
-                .expect("Internal error: Failed to compile placeholder regex") // this should never happen...
+                .expect("Internal error: Failed to compile launch_arguments_placeholder regex") // this should never happen...
         });
 
         RE.replace_all(&arg.into(), |caps: &Captures| {
@@ -297,7 +297,7 @@ pub struct LaunchVersionManifest {
     pub arguments: ArgumentsInfo,
     pub asset_index: AssetIndex,
     pub assets: String,
-    pub compliance_level: u8,
+    pub compliance_level: u32,
     pub downloads: Downloads,
     pub id: String,
     pub java_version: JavaVersion,

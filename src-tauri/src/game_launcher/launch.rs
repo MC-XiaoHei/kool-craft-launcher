@@ -1,6 +1,6 @@
-use crate::game_launcher::executor::Executable;
 use crate::game_launcher::model::LaunchRequest;
 use crate::scheduler::{Task, task};
+use crate::utils::executor::Executable;
 use anyhow::Result;
 
 pub fn get_launch_task() -> impl Task {
@@ -39,5 +39,6 @@ async fn get_launch_executable(request: LaunchRequest) -> Result<Executable> {
         program: java,
         args,
         cwd: None,
+        kill_on_drop: false,
     })
 }
