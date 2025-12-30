@@ -1,3 +1,4 @@
 pub mod inspector;
 pub mod model;
-mod scanner;
+pub mod scanner;
+mod vendors;

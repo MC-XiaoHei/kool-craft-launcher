@@ -1,4 +1,5 @@
 use crate::java_runtime::model::{JavaArch, JavaInstance};
+use crate::java_runtime::vendors::VENDOR_KEYWORDS_MAP;
 use crate::utils::executor::Executable;
 use anyhow::{Context, Result, anyhow};
 use log::warn;
@@ -6,11 +7,12 @@ use regex::Regex;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
+use tap::Pipe;
 use tokio::time::timeout;
 
 const JAVA_VERSION_DETECT_TIMEOUT: Duration = Duration::from_secs(3);
 
-pub async fn inspect_path(path: PathBuf) -> Option<JavaInstance> {
+pub async fn inspect_java_executable(path: PathBuf) -> Option<JavaInstance> {
     let exec = Executable {
         program: path.to_string_lossy().to_string(),
         args: vec!["-version".to_string()],
@@ -20,17 +22,15 @@ pub async fn inspect_path(path: PathBuf) -> Option<JavaInstance> {
 
     let result = timeout(JAVA_VERSION_DETECT_TIMEOUT, exec.run_and_get_output()).await;
 
-    if let Ok(Ok(output)) = result {
-        let parse_result = parse_output(path.clone(), output);
-        match parse_result {
-            Ok(instance) => Some(instance),
-            Err(err) => {
-                warn!("error while detecting java in {path:?}: {err:?}");
-                None
-            }
+    let Ok(Ok(output)) = result else { return None };
+
+    let parse_result = parse_output(path.clone(), output);
+    match parse_result {
+        Ok(instance) => Some(instance),
+        Err(err) => {
+            warn!("error while detecting java in {path:?}: {err:?}");
+            None
         }
-    } else {
-        None
     }
 }
 
@@ -79,7 +79,8 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
         .nth(1)
         .unwrap_or_else(|| output.lines().next().unwrap_or("Unknown"))
         .trim()
-        .to_string();
+        .to_string()
+        .pipe(detect_vendor);
 
     Ok(JavaInstance {
         path: path.to_path_buf(),
@@ -88,6 +89,18 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
         arch,
         vendor_name,
     })
+}
+
+fn detect_vendor(raw: impl Into<String>) -> String {
+    let raw = raw.into();
+
+    for (k, v) in VENDOR_KEYWORDS_MAP {
+        if raw.to_lowercase().contains(k) {
+            return v.to_string();
+        }
+    }
+
+    raw
 }
 
 #[cfg(test)]
