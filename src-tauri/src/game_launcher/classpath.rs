@@ -1,6 +1,6 @@
-use crate::launcher::model::RuleContext;
-use crate::launcher::rule::should_apply_rules;
-use crate::resolver::model::Library;
+use crate::game_launcher::model::RuleContext;
+use crate::game_launcher::rule::should_apply_rules;
+use crate::game_resolver::model::Library;
 use crate::utils::abs_path_buf::AbsPathBuf;
 
 impl Library {

@@ -1,5 +1,5 @@
-use crate::launcher::model::RuleContext;
-use crate::resolver::model::Rule;
+use crate::game_launcher::model::RuleContext;
+use crate::game_resolver::model::Rule;
 use os_info::{Info, Type};
 use regex::Regex;
 use std::collections::HashMap;
@@ -82,7 +82,7 @@ impl Rule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::resolver::model::OsCondition;
+    use crate::game_resolver::model::OsCondition;
     use os_info::{Info, Type};
     use serde_json::json;
 

@@ -36,7 +36,7 @@ impl Default for ThemeConfig {
 }
 
 const CONFIG_DIR: &str = ".kcl";
-const CONFIG_FILE: &str = "theme.json";
+const CONFIG_FILE: &str = "ui_theme.json";
 
 impl ThemeConfig {
     fn config_path() -> anyhow::Result<PathBuf> {
@@ -79,7 +79,7 @@ impl ThemeConfig {
         }
 
         let content =
-            serde_json::to_string_pretty(self).context("Failed to serialize theme config")?;
+            serde_json::to_string_pretty(self).context("Failed to serialize ui_theme config")?;
 
         fs::write(path, content).with_context(|| format!("Failed to write config to {path:?}"))?;
 
@@ -102,7 +102,10 @@ impl ThemeConfig {
                 config
             }
             Ok(None) => {
-                info!("No config file found at {:?}. Using default theme.", path);
+                info!(
+                    "No config file found at {:?}. Using default ui_theme.",
+                    path
+                );
                 Self::default()
             }
             Err(e) => {
@@ -119,7 +122,7 @@ impl ThemeConfig {
         match Self::config_path() {
             Ok(path) => {
                 if let Err(e) = self.save_to(&path) {
-                    error!("Failed to save theme config to {:?}: {:#}", path, e);
+                    error!("Failed to save ui_theme config to {:?}: {:#}", path, e);
                 } else {
                     info!("Theme configuration saved to {:?}.", path);
                 }

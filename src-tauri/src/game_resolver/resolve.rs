@@ -1,6 +1,6 @@
-use crate::resolver::loader::FileSystemVersionLoader;
-use crate::resolver::model::{MinecraftFolderInfo, MinecraftFolderSettings, VersionData};
-use crate::resolver::{FileSystemScanner, VersionLoader, VersionScanner};
+use crate::game_resolver::loader::FileSystemVersionLoader;
+use crate::game_resolver::model::{MinecraftFolderInfo, MinecraftFolderSettings, VersionData};
+use crate::game_resolver::{FileSystemScanner, VersionLoader, VersionScanner};
 use crate::utils::abs_path_buf::AbsPathBuf;
 use futures::StreamExt;
 use futures::stream;

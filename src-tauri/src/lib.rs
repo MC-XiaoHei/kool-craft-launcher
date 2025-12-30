@@ -1,25 +1,25 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-mod assets;
 mod auth;
 mod constants;
+mod game_assets;
+mod game_launcher;
+mod game_resolver;
 mod i18n;
 mod java_runtime;
-mod launcher;
-mod resolver;
 mod scheduler;
-mod theme;
+mod ui_theme;
 mod utils;
 
 use crate::scheduler::Scheduler;
-use crate::theme::commands::register_theme_commands;
-use crate::theme::utils::apply_effect;
+use crate::ui_theme::commands::register_theme_commands;
+use crate::ui_theme::utils::apply_effect;
 use log::info;
 use std::error::Error;
 use tap::Pipe;
 use tauri::plugin::TauriPlugin;
 use tauri::{App, Manager, Runtime};
-use theme::model::{EffectMode, ThemeConfig};
+use ui_theme::model::{EffectMode, ThemeConfig};
 
 pub fn run() {
     info!("App started at {:?}", std::time::SystemTime::now());

@@ -1,5 +1,5 @@
-use crate::launcher::executor::Executable;
-use crate::launcher::model::LaunchRequest;
+use crate::game_launcher::executor::Executable;
+use crate::game_launcher::model::LaunchRequest;
 use crate::scheduler::{Task, task};
 use anyhow::Result;
 
@@ -10,6 +10,7 @@ pub fn get_launch_task() -> impl Task {
 async fn launch_minecraft(request: LaunchRequest) -> Result<()> {
     let executable = get_launch_executable(request).await?;
     let process = executable.spawn()?;
+    // TODO
     Ok(())
 }
 

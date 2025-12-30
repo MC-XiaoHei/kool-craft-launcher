@@ -29,7 +29,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 tauri = { version = "2.9", features = [] }
 tauri-plugin-log = "2.7"
 
-# theme dependencies
+# ui_theme dependencies
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 window-vibrancy = "0.7.1"
 wallpaper = "3.2"

@@ -3,11 +3,11 @@ use crate::auth::model::UserType::Demo;
 use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
 use crate::constants::minecraft_behavior::DEFAULT_VERSION_INDEPENDENT;
 use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, LIBRARIES_DIR_NAME, VERSIONS_DIR_NAME};
-use crate::java_runtime::model::JavaRuntime;
-use crate::resolver::VersionManifest;
-use crate::resolver::model::{
+use crate::game_resolver::VersionManifest;
+use crate::game_resolver::model::{
     Arguments, AssetIndex, Downloads, JavaVersion, Library, Logging, MinecraftFolderInfo,
 };
+use crate::java_runtime::model::JavaRuntime;
 use crate::utils::abs_path_buf::AbsPathBuf;
 use LaunchError::IncompleteVersionManifest;
 use anyhow::Result;
@@ -372,7 +372,7 @@ impl TryFrom<VersionManifest> for LaunchVersionManifest {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use crate::launcher::model::ArgumentsContext;
+    use crate::game_launcher::model::ArgumentsContext;
     use std::collections::HashMap;
 
     #[test]

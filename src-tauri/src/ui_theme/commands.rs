@@ -1,5 +1,5 @@
-use crate::theme::model::ThemeConfig;
-use crate::theme::utils::apply_effect;
+use crate::ui_theme::model::ThemeConfig;
+use crate::ui_theme::utils::apply_effect;
 use anyhow::Context;
 use base64::Engine;
 use base64::engine::general_purpose;
@@ -27,7 +27,7 @@ async fn set_theme_config<R: Runtime>(
     window: WebviewWindow<R>,
     config: ThemeConfig,
 ) -> Result<(), String> {
-    info!("Setting theme config: {:?}", config);
+    info!("Setting ui_theme config: {:?}", config);
 
     apply_effect(&window, &config);
     config.save();

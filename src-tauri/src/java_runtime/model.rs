@@ -1,4 +1,4 @@
-use crate::launcher::model::LaunchError::InvalidJavaRuntime;
+use crate::game_launcher::model::LaunchError::InvalidJavaRuntime;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

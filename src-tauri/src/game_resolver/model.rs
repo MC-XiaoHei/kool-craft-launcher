@@ -1,5 +1,5 @@
-use crate::resolver::model::ArgumentValue::Simple;
-use crate::resolver::model::ArgumentValueContent::{Multiple, Single};
+use crate::game_resolver::model::ArgumentValue::Simple;
+use crate::game_resolver::model::ArgumentValueContent::{Multiple, Single};
 use crate::utils::abs_path_buf::AbsPathBuf;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -237,8 +237,8 @@ pub struct LoggingConfig {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use crate::resolver::VersionManifest;
-    use crate::resolver::model::{
+    use crate::game_resolver::VersionManifest;
+    use crate::game_resolver::model::{
         ArgumentValue, ArgumentValueContent, Arguments, AssetIndex, DownloadFile, Downloads,
         JavaVersion,
     };

@@ -1,7 +1,7 @@
 use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
-use crate::resolver::model::VersionData::{Broken, Normal};
-use crate::resolver::model::{VersionData, VersionManifest};
-use crate::resolver::scanner::VersionMetadata;
+use crate::game_resolver::model::VersionData::{Broken, Normal};
+use crate::game_resolver::model::{VersionData, VersionManifest};
+use crate::game_resolver::scanner::VersionMetadata;
 use crate::utils::abs_path_buf::AbsPathBuf;
 use anyhow::Result;
 use async_trait::async_trait;
