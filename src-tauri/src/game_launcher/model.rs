@@ -1,7 +1,6 @@
 use crate::auth::model::PlayerProfile;
 use crate::auth::model::UserType::Demo;
 use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
-use crate::constants::minecraft_behavior::DEFAULT_VERSION_INDEPENDENT;
 use crate::constants::minecraft_dir::{ASSETS_DIR_NAME, LIBRARIES_DIR_NAME, VERSIONS_DIR_NAME};
 use crate::game_resolver::VersionManifest;
 use crate::game_resolver::model::{
@@ -18,6 +17,8 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use tap::Pipe;
 use thiserror::Error;
+
+const DEFAULT_VERSION_INDEPENDENT: bool = true;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct LaunchRequest {
@@ -276,7 +277,7 @@ impl ArgumentsContext {
     fn replace_placeholder(arg: impl Into<String>, map: &HashMap<String, String>) -> String {
         static RE: LazyLock<Regex> = LazyLock::new(|| {
             Regex::new(r"\$\{([^}]+)}")
-                .expect("Internal error: Failed to compile launch_arguments_placeholder regex") // this should never happen...
+                .expect("Internal Error: Failed to compile launch_arguments_placeholder regex") // this should never happen
         });
 
         RE.replace_all(&arg.into(), |caps: &Captures| {

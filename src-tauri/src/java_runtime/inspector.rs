@@ -37,7 +37,7 @@ pub async fn inspect_java_executable(path: PathBuf) -> Option<JavaInstance> {
 fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r#"version "([^"]+)""#)
-            .expect("Internal error: Failed to compile java_version_detect regex") // this should never happen...
+            .expect("Internal Error: Failed to compile java_version_detect regex") // this should never happen
     });
 
     let version_str = RE
