@@ -1,8 +1,8 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::auth::microsoft::model::{MinecraftToken, XSTSToken};
 use anyhow::{Result, anyhow};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use crate::auth::microsoft::model::{MinecraftToken, XSTSToken};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub async fn get_minecraft_token(client: Client, xsts_token: XSTSToken) -> Result<MinecraftToken> {
     let token = xsts_token.token;
@@ -18,7 +18,10 @@ pub async fn get_minecraft_token(client: Client, xsts_token: XSTSToken) -> Resul
         .await?;
 
     if !response.status().is_success() {
-        return Err(anyhow!("Fail to login to Minecraft {}", response.text().await?));
+        return Err(anyhow!(
+            "Fail to login to Minecraft {}",
+            response.text().await?
+        ));
     }
 
     let data: MinecraftLoginResponse = response.json().await?;
