@@ -11,15 +11,15 @@ use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder}
 use tokio::sync::oneshot;
 use url::Url;
 
-const LOGIN_WINDOW_ID: &str = "in_app_microsoft_login_window";
+const LOGIN_WINDOW_ID: &str = "microsoft_login_window";
 const LOGIN_URL: &str = "https://login.live.com/oauth20_authorize.srf";
 const LOGIN_REDIRECT_URL: &str = "https://login.live.com/oauth20_desktop.srf";
 const TOKEN_URL: &str = "https://login.live.com/oauth20_token.srf";
 
-pub async fn get_microsoft_token_in_app(app: &AppHandle, client: Client) -> Result<MicrosoftToken> {
+pub async fn get_microsoft_token(app: &AppHandle, client: Client) -> Result<MicrosoftToken> {
     let code_rx = open_login_window(app).await?;
     let code = code_rx.await??;
-    let ms_token = get_microsoft_token(client, code).await?;
+    let ms_token = get_microsoft_token_by_code(client, code).await?;
     Ok(ms_token)
 }
 
@@ -66,7 +66,7 @@ fn create_login_window(
 
 fn get_oauth_url() -> Url {
     let mut url =
-        Url::parse(LOGIN_URL).expect("Internal Error: Fail to parse in_app_microsoft_login url"); // this should never happen
+        Url::parse(LOGIN_URL).expect("Internal Error: Fail to parse microsoft login url"); // this should never happen
 
     url.query_pairs_mut()
         .append_pair("client_id", CLIENT_ID)
@@ -124,7 +124,7 @@ struct OAuthTokenResponse {
     expires_in: u64,
 }
 
-async fn get_microsoft_token(client: Client, code: impl Into<String>) -> Result<MicrosoftToken> {
+async fn get_microsoft_token_by_code(client: Client, code: impl Into<String>) -> Result<MicrosoftToken> {
     let code = code.into();
 
     let params = [
