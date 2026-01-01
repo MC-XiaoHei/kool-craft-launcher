@@ -1,5 +1,5 @@
 mod arguments;
 mod classpath;
 pub mod launch;
-pub mod model;
+pub mod models;
 mod rule;

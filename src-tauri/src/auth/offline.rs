@@ -1,5 +1,5 @@
-use crate::auth::model::PlayerProfile;
-use crate::auth::model::UserType::Offline;
+use crate::auth::models::PlayerProfile;
+use crate::auth::models::UserType::Offline;
 use uuid::Uuid;
 
 pub fn generate_offline_uuid(username: impl Into<String>) -> Uuid {

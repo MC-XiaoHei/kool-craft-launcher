@@ -2,7 +2,7 @@
 #![cfg(test)]
 
 use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
-use crate::game_resolver::model::VersionData::{Broken, Normal};
+use crate::game_resolver::models::VersionData::{Broken, Normal};
 use crate::game_resolver::resolve::resolve_all_versions_default;
 use crate::game_resolver::{FileSystemScanner, VersionScanner};
 use crate::utils::abs_path_buf::AbsPathBuf;

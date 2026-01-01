@@ -1,4 +1,4 @@
-use crate::ui_theme::model::{EffectMode, ThemeConfig, ThemeMode};
+use crate::ui_theme::models::{EffectMode, ThemeConfig, ThemeMode};
 use tauri::{Runtime, Theme, WebviewWindow};
 #[cfg(target_os = "macos")]
 use window_vibrancy::{NSVisualEffectMaterial, apply_vibrancy as apply_vibrancy_internal};

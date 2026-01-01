@@ -1,4 +1,4 @@
-use crate::game_launcher::model::LaunchRequest;
+use crate::game_launcher::models::LaunchRequest;
 use crate::scheduler::{Task, task};
 use crate::utils::executor::Executable;
 use anyhow::Result;

@@ -1,4 +1,4 @@
-use crate::ui_theme::model::{EffectMode, ThemeConfig};
+use crate::ui_theme::models::{EffectMode, ThemeConfig};
 use crate::ui_theme::utils::apply_effect;
 use anyhow::Context;
 use base64::Engine;

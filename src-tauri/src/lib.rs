@@ -1,6 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod auth;
+mod config;
 mod constants;
 mod game_assets;
 mod game_launcher;

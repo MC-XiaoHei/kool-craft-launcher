@@ -1,9 +1,9 @@
 pub mod loader;
-pub mod model;
+pub mod models;
 pub mod resolve;
 pub mod scanner;
 mod tests;
 
 pub use loader::VersionLoader;
-pub use model::VersionManifest;
+pub use models::VersionManifest;
 pub use scanner::{FileSystemScanner, VersionScanner};

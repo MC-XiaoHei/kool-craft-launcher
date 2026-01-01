@@ -1,6 +1,6 @@
-use crate::game_launcher::model::{ArgumentsContext, ArgumentsInfo, RuleContext};
+use crate::game_launcher::models::{ArgumentsContext, ArgumentsInfo, RuleContext};
 use crate::game_launcher::rule::should_apply_rules;
-use crate::game_resolver::model::{ArgumentValue, Arguments, OsCondition, Rule};
+use crate::game_resolver::models::{ArgumentValue, Arguments, OsCondition, Rule};
 use ArgumentValue::Complex;
 
 impl ArgumentsInfo {

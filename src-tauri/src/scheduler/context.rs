@@ -1,4 +1,4 @@
-use crate::scheduler::model::TaskRegistry;
+use crate::scheduler::models::TaskRegistry;
 use crate::scheduler::sync::RaceContext;
 use std::sync::Arc;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};

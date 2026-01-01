@@ -1,6 +1,6 @@
 use crate::constants::minecraft_dir::VERSIONS_DIR_NAME;
-use crate::game_resolver::model::VersionData::{Broken, Normal};
-use crate::game_resolver::model::{VersionData, VersionManifest};
+use crate::game_resolver::models::VersionData::{Broken, Normal};
+use crate::game_resolver::models::{VersionData, VersionManifest};
 use crate::game_resolver::scanner::VersionMetadata;
 use crate::utils::abs_path_buf::AbsPathBuf;
 use anyhow::Result;

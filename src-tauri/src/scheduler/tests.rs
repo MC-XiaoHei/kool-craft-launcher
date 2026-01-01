@@ -3,8 +3,8 @@
 
 use crate::scheduler::Context;
 use crate::scheduler::builder::{TaskBuilder, parallel, pipeline, race, task};
-use crate::scheduler::model::TaskSnapshot;
-use crate::scheduler::model::TaskState;
+use crate::scheduler::models::TaskSnapshot;
+use crate::scheduler::models::TaskState;
 use crate::scheduler::sync::RaceContext;
 use crate::scheduler::*;
 use anyhow::anyhow;

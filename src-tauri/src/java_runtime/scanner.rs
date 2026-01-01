@@ -1,5 +1,5 @@
 use crate::java_runtime::inspector::inspect_java_executable;
-use crate::java_runtime::model::JavaInstance;
+use crate::java_runtime::models::JavaInstance;
 use futures::StreamExt;
 use futures::stream;
 use std::collections::HashSet;

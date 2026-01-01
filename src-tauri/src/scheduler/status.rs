@@ -1,5 +1,5 @@
 use crate::scheduler::Context;
-use crate::scheduler::model::{TaskSnapshot, TaskState};
+use crate::scheduler::models::{TaskSnapshot, TaskState};
 use uuid::Uuid;
 
 pub struct TaskStatusUpdater<'a> {

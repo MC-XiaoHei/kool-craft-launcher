@@ -1,7 +1,7 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 #![cfg(test)]
 
-use crate::ui_theme::model::{EffectMode, ThemeConfig, ThemeMode};
+use crate::ui_theme::models::{EffectMode, ThemeConfig, ThemeMode};
 use std::{env, fs};
 use uuid::Uuid;
 

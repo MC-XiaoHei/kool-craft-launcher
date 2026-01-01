@@ -1,4 +1,4 @@
-use crate::scheduler::model::TaskSnapshot;
+use crate::scheduler::models::TaskSnapshot;
 use crate::scheduler::{Scheduler, TaskNode};
 use std::collections::HashMap;
 use uuid::Uuid;

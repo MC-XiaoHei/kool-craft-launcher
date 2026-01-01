@@ -1,6 +1,6 @@
 use super::context::Context;
 use super::traits::Task;
-use crate::scheduler::model::TaskRegistry;
+use crate::scheduler::models::TaskRegistry;
 use anyhow::Result;
 use dashmap::DashMap;
 use std::sync::Arc;

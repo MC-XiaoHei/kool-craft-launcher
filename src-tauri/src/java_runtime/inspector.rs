@@ -1,4 +1,4 @@
-use crate::java_runtime::model::{JavaArch, JavaInstance};
+use crate::java_runtime::models::{JavaArch, JavaInstance};
 use crate::java_runtime::vendors::VENDOR_KEYWORDS_MAP;
 use crate::utils::executor::Executable;
 use anyhow::{Context, Result, anyhow};
