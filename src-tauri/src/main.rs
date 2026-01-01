@@ -3,5 +3,5 @@
 
 #[tokio::main]
 async fn main() {
-    kool_craft_launcher_lib::run()
+    kool_craft_launcher_lib::run().await
 }

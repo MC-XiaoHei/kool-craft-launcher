@@ -19,10 +19,11 @@ use tap::Pipe;
 use tauri::plugin::TauriPlugin;
 use tauri::{App, Runtime};
 
-pub fn run() {
+pub async fn run() {
     info!("App started at {:?}", std::time::SystemTime::now());
     tauri::async_runtime::set(tokio::runtime::Handle::current());
     tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(log_plugin())
         .setup(setup_app)
         .pipe(register_theme_commands)
