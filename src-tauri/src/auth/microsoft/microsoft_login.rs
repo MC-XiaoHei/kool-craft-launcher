@@ -65,8 +65,7 @@ fn create_login_window(
 }
 
 fn get_oauth_url() -> Url {
-    let mut url =
-        Url::parse(LOGIN_URL).expect("Internal Error: Fail to parse microsoft login url"); // this should never happen
+    let mut url = Url::parse(LOGIN_URL).expect("Internal Error: Fail to parse microsoft login url"); // this should never happen
 
     url.query_pairs_mut()
         .append_pair("client_id", CLIENT_ID)
@@ -124,7 +123,10 @@ struct OAuthTokenResponse {
     expires_in: u64,
 }
 
-async fn get_microsoft_token_by_code(client: Client, code: impl Into<String>) -> Result<MicrosoftToken> {
+async fn get_microsoft_token_by_code(
+    client: Client,
+    code: impl Into<String>,
+) -> Result<MicrosoftToken> {
     let code = code.into();
 
     let params = [
