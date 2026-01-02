@@ -52,14 +52,14 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
             .nth(1)
             .unwrap_or("0")
             .parse()
-            .map_err(|_| anyhow!("Invalid major version: {}", version_str))?
+            .map_err(|_| anyhow!("Invalid major version: {version_str}"))?
     } else {
         version_str
             .split('.')
             .next()
             .unwrap_or("0")
             .parse()
-            .map_err(|_| anyhow!("Invalid major version: {}", version_str))?
+            .map_err(|_| anyhow!("Invalid major version: {version_str}"))?
     };
 
     let out_lower = output.to_lowercase();

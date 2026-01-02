@@ -40,9 +40,9 @@ impl Library {
         path.push(version);
 
         let file_name = if let Some(c) = classifier {
-            format!("{}-{}-{}.jar", artifact_id, version, c)
+            format!("{artifact_id}-{version}-{c}.jar")
         } else {
-            format!("{}-{}.jar", artifact_id, version)
+            format!("{artifact_id}-{version}.jar")
         };
 
         path.push(file_name);

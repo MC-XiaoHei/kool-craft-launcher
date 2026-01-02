@@ -17,20 +17,20 @@ pub async fn get_xbox_live_token(
         },
     };
 
-    let resp = client
+    let response = client
         .post("https://user.auth.xboxlive.com/user/authenticate")
         .json(&payload)
         .send()
         .await?;
 
-    if !resp.status().is_success() {
+    if !response.status().is_success() {
         return Err(anyhow!(
             "Fail to pass Xbox Live auth {}",
-            resp.text().await?
+            response.text().await?
         ));
     }
 
-    let data: XboxAuthResponse = resp.json().await?;
+    let data: XboxAuthResponse = response.json().await?;
 
     let token = data.token.clone();
     let uhs = data

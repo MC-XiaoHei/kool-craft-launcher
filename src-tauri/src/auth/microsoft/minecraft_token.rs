@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub async fn get_minecraft_token(client: Client, xsts_token: XSTSToken) -> Result<MinecraftToken> {
     let token = xsts_token.token;
     let uhs = xsts_token.user_hash;
-    let identity_token = format!("XBL3.0 x={};{}", uhs, token);
+    let identity_token = format!("XBL3.0 x={uhs};{token}");
 
     let payload = MinecraftLoginRequest { identity_token };
 
