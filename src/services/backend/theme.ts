@@ -1,8 +1,8 @@
 import { ThemeConfig } from '@/types/theme'
 import { invoke } from '@tauri-apps/api/core'
 
-export async function loadThemeConfig(): Promise<ThemeConfig> {
-  return await invoke<ThemeConfig>('load_theme_config')
+export async function getThemeConfig(): Promise<ThemeConfig> {
+  return await invoke<ThemeConfig>('get_theme_config')
 }
 
 export async function setThemeConfig(config: ThemeConfig): Promise<void> {

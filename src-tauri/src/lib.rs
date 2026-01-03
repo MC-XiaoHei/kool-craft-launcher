@@ -12,24 +12,33 @@ mod scheduler;
 mod ui_theme;
 mod utils;
 
+use crate::config::commands::setup_config;
 use crate::scheduler::commands::setup_scheduler;
 use crate::ui_theme::commands::{register_theme_commands, setup_theme};
-use log::info;
+use anyhow::{Context, Result};
 use std::error::Error;
+use std::time::SystemTime;
 use tap::Pipe;
+use tauri::async_runtime::block_on;
 use tauri::plugin::TauriPlugin;
-use tauri::{App, Runtime};
+use tauri::{App, Builder, Runtime};
 
-pub async fn run() {
-    info!("App started at {:?}", std::time::SystemTime::now());
-    tauri::async_runtime::set(tokio::runtime::Handle::current());
-    tauri::Builder::default()
+pub fn run() -> Result<()> {
+    println!("App started at {:?}", SystemTime::now());
+
+    Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(log_plugin())
-        .setup(setup_app)
-        .pipe(register_theme_commands)
+        .setup(setup_app_handler)
+        .pipe(register_commands)
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .context("error while running tauri application")?;
+
+    Ok(())
+}
+
+fn set_async_runtime() {
+    tauri::async_runtime::set(tokio::runtime::Handle::current());
 }
 
 fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
@@ -53,8 +62,17 @@ fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
         .build()
 }
 
-fn setup_app(app: &mut App) -> Result<(), Box<dyn Error>> {
-    setup_scheduler(app);
+fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
+    block_on(async { setup_app(app).await }).map_err(|e| e.into())
+}
+
+async fn setup_app(app: &mut App) -> Result<()> {
+    setup_config(app).await?;
     setup_theme(app)?;
+    setup_scheduler(app);
     Ok(())
+}
+
+pub fn register_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
+    builder.pipe(register_theme_commands)
 }

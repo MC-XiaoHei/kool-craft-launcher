@@ -1,133 +1,72 @@
-use anyhow::{Context, anyhow};
-use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::{Path, PathBuf};
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum EffectMode {
-    Auto,
-    Mica,
-    Vibrancy,
-    Wallpaper,
-}
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ThemeMode {
-    Auto,
-    Dark,
-    Light,
-}
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct ThemeConfig {
-    pub effect: EffectMode,
-    pub theme: ThemeMode,
-}
-
-impl Default for ThemeConfig {
-    fn default() -> Self {
-        Self {
-            effect: EffectMode::Auto,
-            theme: ThemeMode::Auto,
-        }
-    }
-}
-
-const CONFIG_DIR: &str = ".kcl";
-const CONFIG_FILE: &str = "ui_theme.json";
+use crate::config::modules::theme::{EffectMode, ThemeConfig};
+use crate::utils::os_info::{is_macos, is_windows};
+use log::warn;
+use os_info::Info;
 
 impl ThemeConfig {
-    fn config_path() -> anyhow::Result<PathBuf> {
-        dirs::home_dir()
-            .map(|h| h.join(CONFIG_DIR).join(CONFIG_FILE))
-            .ok_or_else(|| anyhow!("Unable to determine user home directory"))
-    }
-
-    pub(super) fn sanitize(&mut self) {
-        #[cfg(target_os = "windows")]
-        if self.effect == EffectMode::Vibrancy {
+    pub fn sanitize(&mut self, os_info: &Info) {
+        if is_windows(os_info) && self.effect == EffectMode::Vibrancy {
             self.effect = EffectMode::Auto;
             warn!("Vibrancy effect is not supported on Windows. Fallback to Auto.");
         }
 
-        #[cfg(target_os = "macos")]
-        if self.effect == EffectMode::Mica {
+        if is_macos(os_info) && self.effect == EffectMode::Mica {
             self.effect = EffectMode::Auto;
             warn!("Mica effect is not supported on macOS. Fallback to Auto.");
         }
     }
+}
 
-    pub(super) fn load_from(path: &Path) -> anyhow::Result<Option<Self>> {
-        if !path.exists() {
-            return Ok(None);
-        }
+#[cfg_attr(coverage_nightly, coverage(off))]
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::modules::theme::ThemeMode;
+    use crate::utils::os_info::mock_info;
+    use os_info::Type;
 
-        let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read config file at {path:?}"))?;
+    #[test]
+    fn test_macos_config_should_be_sanitize() {
+        let os_info = mock_info(Type::Windows, "10.0", "x86_64");
 
-        let config =
-            serde_json::from_str(&content).context("Failed to parse config JSON content")?;
-
-        Ok(Some(config))
-    }
-
-    pub(super) fn save_to(&self, path: &Path) -> anyhow::Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).context("Failed to ensure config directory exists")?;
-        }
-
-        let content =
-            serde_json::to_string_pretty(self).context("Failed to serialize ui_theme config")?;
-
-        fs::write(path, content).with_context(|| format!("Failed to write config to {path:?}"))?;
-
-        Ok(())
-    }
-
-    pub fn load() -> Self {
-        let path = match Self::config_path() {
-            Ok(p) => p,
-            Err(e) => {
-                warn!("Could not determine config path: {:#}, using default.", e);
-                return Self::default();
-            }
+        let mut macos_config_should_be_sanitize = ThemeConfig {
+            effect: EffectMode::Mica,
+            theme: ThemeMode::Dark,
         };
 
-        match Self::load_from(&path) {
-            Ok(Some(mut config)) => {
-                config.sanitize();
-                info!("Theme configuration loaded from {:?}", path);
-                config
-            }
-            Ok(None) => {
-                info!(
-                    "No config file found at {:?}. Using default ui_theme.",
-                    path
-                );
-                Self::default()
-            }
-            Err(e) => {
-                warn!(
-                    "Failed to load config from {:?}: {:#}, using default.",
-                    path, e
-                );
-                Self::default()
-            }
-        }
+        macos_config_should_be_sanitize.sanitize(&os_info);
+
+        assert_eq!(macos_config_should_be_sanitize.effect, EffectMode::Auto);
+        assert_eq!(macos_config_should_be_sanitize.theme, ThemeMode::Dark);
     }
 
-    pub fn save(&self) {
-        match Self::config_path() {
-            Ok(path) => {
-                if let Err(e) = self.save_to(&path) {
-                    error!("Failed to save ui_theme config to {:?}: {:#}", path, e);
-                }
-            }
-            Err(e) => {
-                error!("Could not determine config path to save: {:#}", e);
-            }
-        }
+    #[test]
+    fn test_windows_config_should_be_sanitize() {
+        let os_info = mock_info(Type::Macos, "14.0", "arm64");
+
+        let mut windows_config_should_be_sanitize = ThemeConfig {
+            effect: EffectMode::Vibrancy,
+            theme: ThemeMode::Dark,
+        };
+
+        windows_config_should_be_sanitize.sanitize(&os_info);
+
+        assert_eq!(windows_config_should_be_sanitize.effect, EffectMode::Auto);
+        assert_eq!(windows_config_should_be_sanitize.theme, ThemeMode::Dark);
+    }
+
+    #[test]
+    fn test_config_should_not_be_sanitize() {
+        let os_info = mock_info(Type::Macos, "14.0", "arm64");
+
+        let mut config_should_not_be_sanitize = ThemeConfig {
+            effect: EffectMode::Auto,
+            theme: ThemeMode::Light,
+        };
+
+        config_should_not_be_sanitize.sanitize(&os_info);
+
+        assert_eq!(config_should_not_be_sanitize.effect, EffectMode::Auto);
+        assert_eq!(config_should_not_be_sanitize.theme, ThemeMode::Light);
     }
 }

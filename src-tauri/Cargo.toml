@@ -14,9 +14,11 @@ futures = "0.3"
 log = "0.4"
 md5 = "0.8.0"
 os_info = "3.7"
+parking_lot = "0.12"
 path-absolutize = "3.1"
 regex = "1.12"
 reqwest = { version = "0.13", features = ["json", "form"] }
+schemars = "1.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tap = "1.0"
@@ -36,6 +38,9 @@ tauri-plugin-log = "2.7"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 window-vibrancy = "0.7.1"
 wallpaper = "3.2"
+
+# macros
+macros = { path = "./macros" }
 
 [lib]
 name = "kool_craft_launcher_lib"

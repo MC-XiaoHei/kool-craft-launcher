@@ -83,20 +83,8 @@ impl Rule {
 mod tests {
     use super::*;
     use crate::game_resolver::models::OsCondition;
-    use os_info::{Info, Type};
-    use serde_json::json;
-
-    fn mock_info(os_type: Type, version: impl Into<String>, arch: impl Into<String>) -> Info {
-        let v = json!({
-            "os_type": os_type,
-            "version": {
-                "Custom": version.into(),
-            },
-            "bitness": "Unknown",
-            "architecture": arch.into(),
-        });
-        serde_json::from_value(v).expect("Failed to deserialize Info mock")
-    }
+    use crate::utils::os_info::mock_info;
+    use os_info::Type;
 
     #[test]
     fn test_os_name_match() {

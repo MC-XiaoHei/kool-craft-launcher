@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { loadThemeConfig, setThemeConfig } from '@/services/backend/theme'
+import { getThemeConfig, setThemeConfig } from '@/services/backend/theme'
 import { EffectMode, ThemeMode } from '@/types/theme'
 
 export const useThemeStore = defineStore('theme', () => {
@@ -8,7 +8,7 @@ export const useThemeStore = defineStore('theme', () => {
   const effect = ref(EffectMode.Auto)
 
   async function initTheme() {
-    const config = await loadThemeConfig()
+    const config = await getThemeConfig()
     theme.value = config.theme
     effect.value = config.effect
   }

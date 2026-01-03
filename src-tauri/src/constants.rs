@@ -15,3 +15,8 @@ pub mod minecraft_dir {
     pub const NATIVES_DIR_NAME: &str = "natives";
     pub const LIBRARIES_DIR_NAME: &str = "libraries";
 }
+
+pub mod file_system {
+    pub const LAUNCHER_DIR_NAME: &str = ".kcl";
+    pub const CONFIG_FILE_NAME: &str = "config.json";
+}

@@ -1,32 +1,32 @@
-use crate::ui_theme::models::{EffectMode, ThemeConfig};
-use crate::ui_theme::utils::apply_effect;
-use anyhow::Context;
+use crate::config::modules::theme::{EffectMode, ThemeConfig};
+use crate::config::store::ConfigStore;
+use crate::ui_theme::effect::apply_effect;
+use crate::utils::command::CommandResult;
+use anyhow::Result;
+use anyhow::{Context, anyhow};
 use base64::Engine;
 use base64::engine::general_purpose;
 use image::{ImageFormat, ImageReader};
-use log::{error, info};
-use std::error::Error;
 use std::io::Cursor;
-use std::time::Instant;
-use tauri::{App, Builder, Manager, Runtime, WebviewWindow, command};
+use tauri::{App, Builder, Manager, Runtime, State, WebviewWindow, command};
 use tokio::task::spawn_blocking;
 
 pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
-        load_theme_config,
+        get_theme_config,
         set_theme_config,
         get_wallpaper
     ])
 }
 
-pub fn setup_theme(app: &mut App) -> Result<(), Box<dyn Error>> {
+pub fn setup_theme(app: &mut App) -> Result<()> {
     let window = app
         .get_webview_window("main")
-        .ok_or("Main window not found")?;
+        .context("Main window not found")?;
+    let store = app.state::<ConfigStore>();
 
-    let config = ThemeConfig::load();
+    let config = store.get::<ThemeConfig>();
     apply_effect(&window, &config);
-    config.save();
 
     if matches!(config.effect, EffectMode::Auto | EffectMode::Mica) {
         window.show()?;
@@ -36,37 +36,31 @@ pub fn setup_theme(app: &mut App) -> Result<(), Box<dyn Error>> {
 }
 
 #[command]
-fn load_theme_config() -> ThemeConfig {
-    ThemeConfig::load()
+fn get_theme_config(store: State<'_, ConfigStore>) -> ThemeConfig {
+    store.get::<ThemeConfig>()
 }
 
 #[command]
 async fn set_theme_config<R: Runtime>(
     window: WebviewWindow<R>,
+    store: State<'_, ConfigStore>,
     config: ThemeConfig,
-) -> Result<(), String> {
+) -> CommandResult<()> {
     apply_effect(&window, &config);
-    config.save();
+    store.set(config).await?;
     Ok(())
 }
 
 #[command]
-async fn get_wallpaper() -> Result<String, String> {
-    let start = Instant::now();
-
-    let result = spawn_blocking(get_wallpaper_data_url)
+async fn get_wallpaper() -> CommandResult<String> {
+    spawn_blocking(get_wallpaper_data_url)
         .await
-        .map_err(|e| format!("Task join error: {e}"))?;
-
-    match &result {
-        Ok(_) => info!("Wallpaper processed successfully in {:?}", start.elapsed()),
-        Err(e) => error!("Failed to process wallpaper: {e:}"),
-    }
-
-    result.map_err(|e| e.to_string())
+        .map_err(|e| anyhow!(e))?
+        .context("Failed to get wallpaper data")
+        .map_err(Into::into)
 }
 
-fn get_wallpaper_data_url() -> anyhow::Result<String> {
+fn get_wallpaper_data_url() -> Result<String> {
     let path_str = wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {e}"))?;
 
     let img = ImageReader::open(&path_str)
