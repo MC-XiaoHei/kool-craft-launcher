@@ -12,23 +12,23 @@ mod scheduler;
 mod ui_theme;
 mod utils;
 
-use crate::config::commands::setup_config;
+use crate::config::commands::{register_config_commands, setup_config};
+use crate::constants::file_system::LOG_DIR_NAME;
 use crate::scheduler::commands::setup_scheduler;
 use crate::ui_theme::commands::{register_theme_commands, setup_theme};
+use crate::utils::dirs::app_dir;
 use anyhow::{Context, Result};
+use chrono::Local;
 use std::error::Error;
-use std::time::SystemTime;
 use tap::Pipe;
 use tauri::async_runtime::block_on;
 use tauri::plugin::TauriPlugin;
 use tauri::{App, Builder, Runtime};
 
 pub fn run() -> Result<()> {
-    println!("App started at {:?}", SystemTime::now());
-
     Builder::default()
         .plugin(tauri_plugin_http::init())
-        .plugin(log_plugin())
+        .plugin(log_plugin()?)
         .setup(setup_app_handler)
         .pipe(register_commands)
         .run(tauri::generate_context!())
@@ -37,14 +37,15 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-fn set_async_runtime() {
-    tauri::async_runtime::set(tokio::runtime::Handle::current());
-}
-
-fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
-    tauri_plugin_log::Builder::default()
+fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
+    use tauri_plugin_log::*;
+    let plugin = Builder::default()
         .level(log::LevelFilter::Info)
-        .max_file_size(5_000_000 /* bytes */)
+        .target(Target::new(TargetKind::Webview))
+        .target(Target::new(TargetKind::Folder {
+            path: app_dir()?.join(LOG_DIR_NAME),
+            file_name: Some(Local::now().format("%Y-%m-%d").to_string()),
+        }))
         .format(|out, message, record| {
             let full_target = record.target();
 
@@ -53,13 +54,15 @@ fn log_plugin<R: Runtime>() -> TauriPlugin<R> {
                 .unwrap_or(full_target);
 
             out.finish(format_args!(
-                "[{}] [{}] {}",
+                "[{}] [{}] [{}] {}",
+                Local::now().format("%Y-%m-%d %H:%M:%S"),
                 record.level(),
                 display_target,
                 message
             ))
         })
-        .build()
+        .build();
+    Ok(plugin)
 }
 
 fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
@@ -74,5 +77,7 @@ async fn setup_app(app: &mut App) -> Result<()> {
 }
 
 pub fn register_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder.pipe(register_theme_commands)
+    builder
+        .pipe(register_config_commands)
+        .pipe(register_theme_commands)
 }

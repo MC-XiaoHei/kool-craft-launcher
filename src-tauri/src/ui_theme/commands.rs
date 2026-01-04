@@ -15,7 +15,7 @@ pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
     builder.invoke_handler(tauri::generate_handler![
         get_theme_config,
         set_theme_config,
-        get_wallpaper
+        get_wallpaper,
     ])
 }
 

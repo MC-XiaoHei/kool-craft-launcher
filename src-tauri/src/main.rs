@@ -2,13 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
-use log::error;
-
 fn main() {
     kool_craft_launcher_lib::run().unwrap_or_else(log_error);
 }
 
 fn log_error(err: anyhow::Error) {
     eprintln!("Fail to run launcher: {err:?}");
-    error!("Fail to run launcher: {err:?}");
 }

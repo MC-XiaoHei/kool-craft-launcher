@@ -1,5 +1,4 @@
 use anyhow::Result;
-use log::info;
 use macros::config;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
