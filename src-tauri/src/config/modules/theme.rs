@@ -1,9 +1,8 @@
 use anyhow::Result;
-use macros::config;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use macros::{config, config_type};
 
 #[config(name = "theme", post_process = post_process)]
+#[serde(rename_all = "camelCase")]
 pub struct ThemeConfig {
     pub effect: EffectMode,
     pub theme: ThemeMode,
@@ -15,7 +14,8 @@ fn post_process(config: &mut ThemeConfig) -> Result<()> {
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Copy, Debug, PartialEq, Eq, JsonSchema)]
+#[config_type]
+#[derive(Default, PartialEq, Eq)]
 pub enum EffectMode {
     #[default]
     Auto,
@@ -24,7 +24,8 @@ pub enum EffectMode {
     Wallpaper,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Copy, Debug, PartialEq, Eq, JsonSchema)]
+#[config_type]
+#[derive(Default, PartialEq, Eq)]
 pub enum ThemeMode {
     #[default]
     Auto,

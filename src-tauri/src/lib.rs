@@ -19,6 +19,7 @@ use crate::ui_theme::commands::{register_theme_commands, setup_theme};
 use crate::utils::dirs::app_dir;
 use anyhow::{Context, Result};
 use chrono::Local;
+use specta_typescript::Typescript;
 use std::error::Error;
 use tap::Pipe;
 use tauri::async_runtime::block_on;
@@ -26,6 +27,9 @@ use tauri::plugin::TauriPlugin;
 use tauri::{App, Builder, Runtime};
 
 pub fn run() -> Result<()> {
+    #[cfg(debug_assertions)]
+    export_types();
+
     Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(log_plugin()?)
@@ -37,8 +41,16 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
+// use .unwrap() here is safe, because this function only calls in debug or generating type bindings
+pub fn export_types() {
+    Typescript::default()
+        .export_to("../src/bindings/types.ts", &specta::export())
+        .unwrap();
+}
+
 fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
     use tauri_plugin_log::*;
+
     let plugin = Builder::default()
         .level(log::LevelFilter::Info)
         .target(Target::new(TargetKind::Webview))

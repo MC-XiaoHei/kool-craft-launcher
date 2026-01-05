@@ -64,13 +64,16 @@ impl ConfigArgs {
             quote!(serde::Serialize),
             quote!(serde::Deserialize),
             quote!(schemars::JsonSchema),
+            quote!(specta::Type),
         ];
 
         if !self.no_default {
             traits.push(quote!(std::default::Default));
         }
 
-        quote! { #[derive(#(#traits),*)] }
+        quote! {
+            #[derive(#(#traits),*)]
+        }
     }
 
     fn generate_ide_helper(

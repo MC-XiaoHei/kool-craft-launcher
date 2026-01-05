@@ -2,6 +2,7 @@
 name = "kool-craft-launcher"
 version = "1.0.0"
 edition = "2024"
+default-run = "kool-craft-launcher"
 
 [dependencies]
 # common dependencies
@@ -22,6 +23,8 @@ reqwest = { version = "0.13", features = ["json", "form"] }
 schemars = "1.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+specta = {  version = "2.0.0-rc", features = ["uuid", "chrono", "url", "tokio", "derive", "export"] }
+specta-typescript = "0.0"
 tap = "1.0"
 tempfile = "3"
 thiserror = "2.0"
@@ -46,6 +49,10 @@ macros = { path = "./macros" }
 [lib]
 name = "kool_craft_launcher_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "gen-type-bindings"
+path = "src/gen_type_bindings.rs"
 
 [build-dependencies]
 tauri-build = { version = "2.5", features = [] }

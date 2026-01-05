@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "pnpm frontend:dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm tauri:icon && pnpm frontend:build",
+    "beforeBuildCommand": "pnpm tauri:icon && pnpm gen-type-bindings && pnpm frontend:build",
     "frontendDist": "../dist"
   },
   "app": {

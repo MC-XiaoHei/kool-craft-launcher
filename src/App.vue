@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
-import { getCurrentWindow } from '@tauri-apps/api/window'
-import { useThemeStore } from '@/stores/theme.ts'
-import { getWallpaperDataUrl } from '@/services/backend/theme.ts'
-import { cacheWallpaper, getCachedWallpaper } from '@/composables/wallpaper.ts'
-import { EffectMode, ThemeMode } from '@/types/theme'
+  import { computed, onMounted, ref } from 'vue'
+  import { getCurrentWindow } from '@tauri-apps/api/window'
+  import { useThemeStore } from '@/stores/theme.ts'
+  import { getWallpaperDataUrl } from '@/services/backend/theme.ts'
+  import { cacheWallpaper, getCachedWallpaper } from '@/composables/wallpaper.ts'
+  import { EffectMode } from './bindings/types'
 
-const appWindow = getCurrentWindow()
+  const appWindow = getCurrentWindow()
   const theme = useThemeStore()
 
   const wallpaperUrl = ref(getCachedWallpaper())
@@ -16,8 +16,8 @@ const appWindow = getCurrentWindow()
   const systemIsDark = ref(systemDarkMediaQuery.matches)
 
   const isDark = computed(() => {
-    if (theme.theme === ThemeMode.Auto) return systemIsDark.value
-    return theme.theme === ThemeMode.Dark
+    if (theme.theme === 'Auto') return systemIsDark.value
+    return theme.theme === 'Dark'
   })
 
   onMounted(async () => {
@@ -32,7 +32,7 @@ const appWindow = getCurrentWindow()
   function listenToSystemThemeChanges() {
     systemDarkMediaQuery.addEventListener('change', e => {
       systemIsDark.value = e.matches
-      if (theme.theme === ThemeMode.Auto) theme.refreshTheme()
+      if (theme.theme === 'Auto') theme.refreshTheme()
     })
   }
 
@@ -49,7 +49,7 @@ const appWindow = getCurrentWindow()
   async function applyEffect(target: EffectMode, force = false) {
     if (!force && theme.effect === target) return
 
-    if (target === EffectMode.Wallpaper) {
+    if (target === 'Wallpaper') {
       await loadWallpaper()
       overlayOpacity.value = 1
       await new Promise(r => setTimeout(r, 200))
@@ -86,26 +86,26 @@ const appWindow = getCurrentWindow()
           <label>渲染策略</label>
           <div class="btn-row">
             <button
-              :class="{ active: theme.effect === EffectMode.Mica }"
-              @click="applyEffect(EffectMode.Mica)"
+              :class="{ active: theme.effect === 'Mica' }"
+              @click="applyEffect('Mica')"
             >
               Win11 Mica
             </button>
             <button
-              :class="{ active: theme.effect === EffectMode.Vibrancy }"
-              @click="applyEffect(EffectMode.Vibrancy)"
+              :class="{ active: theme.effect === 'Vibrancy' }"
+              @click="applyEffect('Vibrancy')"
             >
               macOS Vibrancy
             </button>
             <button
-              :class="{ active: theme.effect === EffectMode.Wallpaper }"
-              @click="applyEffect(EffectMode.Wallpaper)"
+              :class="{ active: theme.effect === 'Wallpaper' }"
+              @click="applyEffect('Wallpaper')"
             >
               Wallpaper (通用)
             </button>
             <button
-              :class="{ active: theme.effect === EffectMode.Auto }"
-              @click="applyEffect(EffectMode.Auto)"
+              :class="{ active: theme.effect === 'Auto' }"
+              @click="applyEffect('Auto')"
             >
               Auto
             </button>
@@ -115,22 +115,13 @@ const appWindow = getCurrentWindow()
         <div class="control-group">
           <label>颜色主题</label>
           <div class="btn-row">
-            <button
-              :class="{ active: theme.theme === ThemeMode.Auto }"
-              @click="theme.theme = ThemeMode.Auto"
-            >
+            <button :class="{ active: theme.theme === 'Auto' }" @click="theme.theme = 'Auto'">
               Auto
             </button>
-            <button
-              :class="{ active: theme.theme === ThemeMode.Light }"
-              @click="theme.theme = ThemeMode.Light"
-            >
+            <button :class="{ active: theme.theme === 'Light' }" @click="theme.theme = 'Light'">
               Light
             </button>
-            <button
-              :class="{ active: theme.theme === ThemeMode.Dark }"
-              @click="theme.theme = ThemeMode.Dark"
-            >
+            <button :class="{ active: theme.theme === 'Dark' }" @click="theme.theme = 'Dark'">
               Dark
             </button>
           </div>

@@ -1,4 +1,4 @@
-import { ThemeConfig } from '@/types/theme'
+import { ThemeConfig } from '@/bindings/types'
 import { invoke } from '@tauri-apps/api/core'
 
 export async function getThemeConfig(): Promise<ThemeConfig> {
