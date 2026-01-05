@@ -1,4 +1,4 @@
-pub mod command;
+pub mod commands;
 mod game_profile;
 mod microsoft_login;
 mod minecraft_token;

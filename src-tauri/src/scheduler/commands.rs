@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use crate::config::store::ConfigStore;
 use crate::scheduler::Scheduler;
 use tauri::{App, Manager};

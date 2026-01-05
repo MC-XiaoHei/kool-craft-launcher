@@ -38,7 +38,7 @@ tauri = { version = "2.9", features = [] }
 tauri-plugin-http = "2.5"
 tauri-plugin-log = "2.7"
 
-# ui_theme dependencies
+# theme dependencies
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 window-vibrancy = "0.7.1"
 wallpaper = "3.2"

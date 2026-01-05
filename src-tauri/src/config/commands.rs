@@ -1,7 +1,10 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use crate::config::modules::theme::ThemeConfig;
 use crate::config::persistence::FilePersistence;
 use crate::config::store::ConfigStore;
 use crate::constants::file_system::CONFIG_FILE_NAME;
+use crate::utils::command::CommandResult;
 use crate::utils::dirs::app_dir;
 use anyhow::Result;
 use serde_json::Value;
@@ -18,22 +21,18 @@ pub async fn setup_config(app: &App) -> Result<()> {
     Ok(())
 }
 
-pub fn register_config_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder.invoke_handler(tauri::generate_handler![get_schemas, get_values])
-}
-
 async fn register_config_modules(store: &ConfigStore) -> Result<()> {
     store.register::<ThemeConfig>().await?;
     Ok(())
 }
 
 #[command]
-async fn get_schemas(store: State<'_, ConfigStore>) -> Result<HashMap<String, Value>, ()> {
+pub async fn get_schemas(store: State<'_, ConfigStore>) -> CommandResult<HashMap<String, Value>> {
     Ok(store.export_schemas())
 }
 
 #[command]
-async fn get_values(store: State<'_, ConfigStore>) -> Result<HashMap<String, Value>, ()> {
+pub async fn get_values(store: State<'_, ConfigStore>) -> CommandResult<HashMap<String, Value>> {
     Ok(store.export_values())
 }
 

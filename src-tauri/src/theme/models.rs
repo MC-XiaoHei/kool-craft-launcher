@@ -30,7 +30,7 @@ mod tests {
         let os_info = mock_info(Type::Windows, "10.0", "x86_64");
 
         let mut macos_config_should_be_sanitize = ThemeConfig {
-            effect: EffectMode::Mica,
+            effect: EffectMode::Vibrancy,
             theme: ThemeMode::Dark,
         };
 
@@ -45,7 +45,7 @@ mod tests {
         let os_info = mock_info(Type::Macos, "14.0", "arm64");
 
         let mut windows_config_should_be_sanitize = ThemeConfig {
-            effect: EffectMode::Vibrancy,
+            effect: EffectMode::Mica,
             theme: ThemeMode::Dark,
         };
 

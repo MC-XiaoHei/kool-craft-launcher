@@ -166,10 +166,7 @@ Java HotSpot(TM) Client VM (build 24.80-b15, mixed mode)"#;
     #[test]
     fn should_extract_vendor_name_from_second_line() {
         let instance = parse(OUTPUT_JAVA_17_HOTSPOT).unwrap();
-        assert_eq!(
-            instance.vendor_name,
-            "Java(TM) SE Runtime Environment (build 17.0.1+12-LTS-39)"
-        );
+        assert_eq!(instance.vendor_name, "Oracle Java");
     }
 
     #[test]

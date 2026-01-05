@@ -1,6 +1,8 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use crate::config::modules::theme::{EffectMode, ThemeConfig};
 use crate::config::store::ConfigStore;
-use crate::ui_theme::effect::apply_effect;
+use crate::theme::effect::apply_effect;
 use crate::utils::command::CommandResult;
 use anyhow::Result;
 use anyhow::{Context, anyhow};
@@ -10,14 +12,6 @@ use image::{ImageFormat, ImageReader};
 use std::io::Cursor;
 use tauri::{App, Builder, Manager, Runtime, State, WebviewWindow, command};
 use tokio::task::spawn_blocking;
-
-pub fn register_theme_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder.invoke_handler(tauri::generate_handler![
-        get_theme_config,
-        set_theme_config,
-        get_wallpaper,
-    ])
-}
 
 pub fn setup_theme(app: &mut App) -> Result<()> {
     let window = app
@@ -36,12 +30,12 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
 }
 
 #[command]
-fn get_theme_config(store: State<'_, ConfigStore>) -> ThemeConfig {
+pub fn get_theme_config(store: State<'_, ConfigStore>) -> ThemeConfig {
     store.get::<ThemeConfig>()
 }
 
 #[command]
-async fn set_theme_config<R: Runtime>(
+pub async fn set_theme_config<R: Runtime>(
     window: WebviewWindow<R>,
     store: State<'_, ConfigStore>,
     config: ThemeConfig,
@@ -52,7 +46,7 @@ async fn set_theme_config<R: Runtime>(
 }
 
 #[command]
-async fn get_wallpaper() -> CommandResult<String> {
+pub async fn get_wallpaper() -> CommandResult<String> {
     spawn_blocking(get_wallpaper_data_url)
         .await
         .map_err(|e| anyhow!(e))?

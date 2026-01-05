@@ -1,6 +1,8 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+#![cfg_attr(debug_assertions, allow(unused))]
 
 mod auth;
+mod commands;
 mod config;
 mod constants;
 mod game_assets;
@@ -9,24 +11,27 @@ mod game_resolver;
 mod i18n;
 mod java_runtime;
 mod scheduler;
-mod ui_theme;
+mod theme;
 mod utils;
 
-use crate::config::commands::{register_config_commands, setup_config};
+use crate::config::commands::setup_config;
 use crate::constants::file_system::LOG_DIR_NAME;
 use crate::scheduler::commands::setup_scheduler;
-use crate::ui_theme::commands::{register_theme_commands, setup_theme};
+use crate::theme::commands::setup_theme;
 use crate::utils::dirs::app_dir;
 use anyhow::{Context, Result};
 use chrono::Local;
+use commands::register_commands;
+use futures::FutureExt;
 use specta_typescript::Typescript;
 use std::error::Error;
 use std::fmt::Arguments;
 use tap::Pipe;
 use tauri::async_runtime::block_on;
 use tauri::plugin::TauriPlugin;
-use tauri::{App, Builder, Runtime};
+use tauri::{App, Builder, Wry};
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn run() -> Result<()> {
     #[cfg(debug_assertions)]
     export_types();
@@ -43,19 +48,17 @@ pub fn run() -> Result<()> {
 }
 
 // use .unwrap() here is safe, because this function only calls in debug or generating type bindings
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn export_types() {
     Typescript::default()
         .export_to("../src/bindings/types.ts", &specta::export())
         .unwrap();
 }
 
-fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
+#[cfg_attr(coverage_nightly, coverage(off))]
+fn log_plugin() -> Result<TauriPlugin<Wry>> {
     use log::*;
     use tauri_plugin_log::*;
-
-    fn escape_tao_msg_below_error(metadata: &Metadata) -> bool {
-        !(metadata.target().starts_with("tao") && metadata.level() < Level::Error)
-    }
 
     let frontend_console_target = Target::new(TargetKind::Webview);
 
@@ -84,7 +87,6 @@ fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
 
     let plugin = Builder::default()
         .level(LevelFilter::Info)
-        .filter(escape_tao_msg_below_error)
         .target(frontend_console_target)
         .target(app_dir_logs_target)
         .format(formatter)
@@ -92,19 +94,15 @@ fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
     Ok(plugin)
 }
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
     block_on(async { setup_app(app).await }).map_err(|e| e.into())
 }
 
+#[cfg_attr(coverage_nightly, coverage(off))]
 async fn setup_app(app: &mut App) -> Result<()> {
     setup_config(app).await?;
     setup_theme(app)?;
     setup_scheduler(app);
     Ok(())
-}
-
-pub fn register_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder
-        .pipe(register_config_commands)
-        .pipe(register_theme_commands)
 }

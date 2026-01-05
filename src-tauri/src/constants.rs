@@ -1,4 +1,4 @@
-#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
+#![cfg_attr(coverage_nightly, coverage(off))]
 
 pub mod launcher {
     pub const LAUNCHER_NAME: &str = "Kool Craft Launcher";

@@ -29,9 +29,11 @@ where
     type Input = A::Input;
     type Output = B::Output;
 
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn id(&self) -> Uuid {
         self.id
     }
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn name(&self) -> String {
         "Chain".into()
     }
