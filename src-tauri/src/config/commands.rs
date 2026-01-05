@@ -7,7 +7,7 @@ use anyhow::Result;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tauri::{App, Manager, State, command, Runtime, Builder};
+use tauri::{App, Builder, Manager, Runtime, State, command};
 
 pub async fn setup_config(app: &App) -> Result<()> {
     let persistence = FilePersistence::new(config_path()?);
@@ -19,10 +19,7 @@ pub async fn setup_config(app: &App) -> Result<()> {
 }
 
 pub fn register_config_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder.invoke_handler(tauri::generate_handler![
-        get_schemas,
-        get_values,
-    ])
+    builder.invoke_handler(tauri::generate_handler![get_schemas, get_values])
 }
 
 async fn register_config_modules(store: &ConfigStore) -> Result<()> {

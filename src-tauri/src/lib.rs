@@ -21,6 +21,7 @@ use anyhow::{Context, Result};
 use chrono::Local;
 use specta_typescript::Typescript;
 use std::error::Error;
+use std::fmt::Arguments;
 use tap::Pipe;
 use tauri::async_runtime::block_on;
 use tauri::plugin::TauriPlugin;
@@ -49,30 +50,44 @@ pub fn export_types() {
 }
 
 fn log_plugin<R: Runtime>() -> Result<TauriPlugin<R>> {
+    use log::*;
     use tauri_plugin_log::*;
 
+    fn escape_tao_msg_below_error(metadata: &Metadata) -> bool {
+        !(metadata.target().starts_with("tao") && metadata.level() < Level::Error)
+    }
+
+    let frontend_console_target = Target::new(TargetKind::Webview);
+
+    let app_dir_logs_target = Target::new(TargetKind::Folder {
+        path: app_dir()?.join(LOG_DIR_NAME),
+        file_name: Some(Local::now().format("%Y-%m-%d").to_string()),
+    });
+
+    fn formatter(out: fern::FormatCallback, message: &Arguments, record: &Record) {
+        let full_target = record.target();
+
+        let display_target = full_target
+            .strip_prefix("kool_craft_launcher_lib::")
+            .unwrap_or(full_target);
+
+        let result = format_args!(
+            "[{}] [{}] [{}] {}",
+            Local::now().format("%Y-%m-%d %H:%M:%S"),
+            record.level(),
+            display_target,
+            message
+        );
+
+        out.finish(result)
+    }
+
     let plugin = Builder::default()
-        .level(log::LevelFilter::Info)
-        .target(Target::new(TargetKind::Webview))
-        .target(Target::new(TargetKind::Folder {
-            path: app_dir()?.join(LOG_DIR_NAME),
-            file_name: Some(Local::now().format("%Y-%m-%d").to_string()),
-        }))
-        .format(|out, message, record| {
-            let full_target = record.target();
-
-            let display_target = full_target
-                .strip_prefix("kool_craft_launcher_lib::")
-                .unwrap_or(full_target);
-
-            out.finish(format_args!(
-                "[{}] [{}] [{}] {}",
-                Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level(),
-                display_target,
-                message
-            ))
-        })
+        .level(LevelFilter::Info)
+        .filter(escape_tao_msg_below_error)
+        .target(frontend_console_target)
+        .target(app_dir_logs_target)
+        .format(formatter)
         .build();
     Ok(plugin)
 }
