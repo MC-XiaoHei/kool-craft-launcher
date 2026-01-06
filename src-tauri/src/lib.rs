@@ -1,6 +1,7 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![cfg_attr(debug_assertions, allow(unused))]
 
+use std::io::Write;
 mod auth;
 mod commands;
 mod config;
@@ -12,18 +13,19 @@ mod i18n;
 mod java_runtime;
 mod scheduler;
 mod theme;
-mod utils;
+pub mod utils;
 
 use crate::config::commands::setup_config;
 use crate::constants::file_system::LOG_DIR_NAME;
+use utils::codegen::do_codegen;
 use crate::scheduler::commands::setup_scheduler;
 use crate::theme::commands::setup_theme;
 use crate::utils::dirs::app_dir;
+use crate::utils::global_app_handle::set_global_app_handle;
 use anyhow::{Context, Result};
 use chrono::Local;
 use commands::register_commands;
 use futures::FutureExt;
-use specta_typescript::Typescript;
 use std::error::Error;
 use std::fmt::Arguments;
 use tap::Pipe;
@@ -34,7 +36,7 @@ use tauri::{App, Builder, Wry};
 #[cfg_attr(coverage_nightly, coverage(off))]
 pub fn run() -> Result<()> {
     #[cfg(debug_assertions)]
-    export_types();
+    do_codegen();
 
     Builder::default()
         .plugin(tauri_plugin_http::init())
@@ -45,14 +47,6 @@ pub fn run() -> Result<()> {
         .context("error while running tauri application")?;
 
     Ok(())
-}
-
-// use .unwrap() here is safe, because this function only calls in debug or generating type bindings
-#[cfg_attr(coverage_nightly, coverage(off))]
-pub fn export_types() {
-    Typescript::default()
-        .export_to("../src/bindings/types.ts", &specta::export())
-        .unwrap();
 }
 
 #[cfg_attr(coverage_nightly, coverage(off))]
@@ -74,13 +68,9 @@ fn log_plugin() -> Result<TauriPlugin<Wry>> {
             .strip_prefix("kool_craft_launcher_lib::")
             .unwrap_or(full_target);
 
-        let result = format_args!(
-            "[{}] [{}] [{}] {}",
-            Local::now().format("%Y-%m-%d %H:%M:%S"),
-            record.level(),
-            display_target,
-            message
-        );
+        let current_time = Local::now().format("%Y-%m-%d %H:%M:%S");
+        let log_level = record.level();
+        let result = format_args!("[{current_time}] [{log_level}] [{display_target}] {message}");
 
         out.finish(result)
     }
@@ -101,6 +91,7 @@ fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
 
 #[cfg_attr(coverage_nightly, coverage(off))]
 async fn setup_app(app: &mut App) -> Result<()> {
+    set_global_app_handle(app)?;
     setup_config(app).await?;
     setup_theme(app)?;
     setup_scheduler(app);

@@ -1,6 +1,6 @@
-use crate::config::modules::theme::{EffectMode, ThemeConfig, ThemeMode};
+use crate::config::modules::theme::{ThemeEffect, ThemeConfig, ThemeMode};
 use crate::utils::os_info::{is_macos, is_windows, is_windows_11};
-use log::warn;
+use log::{info, warn};
 use os_info::Info;
 use tauri::{Runtime, Theme, WebviewWindow};
 use window_vibrancy::{
@@ -17,7 +17,7 @@ pub fn apply_effect<R: Runtime>(window: &WebviewWindow<R>, config: &ThemeConfig)
 
 fn get_is_dark<R: Runtime>(window: &WebviewWindow<R>, config: &ThemeConfig) -> bool {
     let system_is_dark = window.theme().unwrap_or(Theme::Light) == Theme::Dark;
-    match config.theme {
+    match config.mode {
         ThemeMode::Dark => true,
         ThemeMode::Light => false,
         ThemeMode::Auto => system_is_dark,
@@ -25,13 +25,13 @@ fn get_is_dark<R: Runtime>(window: &WebviewWindow<R>, config: &ThemeConfig) -> b
 }
 
 fn clear_previous_effect<R: Runtime>(window: &WebviewWindow<R>, info: &Info) {
-    if is_windows(&info) {
+    if is_windows(info) {
         let _ = clear_mica(window).map_err(|err| {
             warn!("Failed to clear mica effect: {}", err);
         });
     }
 
-    if is_macos(&info) {
+    if is_macos(info) {
         let _ = clear_vibrancy(window).map_err(|err| {
             warn!("Failed to clear vibrancy: {}", err);
         });
@@ -40,20 +40,20 @@ fn clear_previous_effect<R: Runtime>(window: &WebviewWindow<R>, info: &Info) {
 
 fn apply_config_effect<R: Runtime>(
     window: &WebviewWindow<R>,
-    effect: &EffectMode,
+    effect: &ThemeEffect,
     info: &Info,
     is_dark: bool,
 ) {
     match effect {
-        EffectMode::Mica if is_windows(&info) => {
+        ThemeEffect::Mica if is_windows(&info) => {
             apply_mica(window, is_dark);
         }
 
-        EffectMode::Vibrancy if is_macos(&info) => {
+        ThemeEffect::Vibrancy if is_macos(&info) => {
             apply_vibrancy(window, is_dark);
         }
 
-        EffectMode::Wallpaper => {}
+        ThemeEffect::Wallpaper => {}
 
         _ if is_windows_11(&info) => {
             apply_mica(window, is_dark);

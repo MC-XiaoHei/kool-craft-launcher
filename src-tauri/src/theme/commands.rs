@@ -1,6 +1,6 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 
-use crate::config::modules::theme::{EffectMode, ThemeConfig};
+use crate::config::modules::theme::{ThemeEffect, ThemeConfig};
 use crate::config::store::ConfigStore;
 use crate::theme::effect::apply_effect;
 use crate::utils::command::CommandResult;
@@ -10,6 +10,7 @@ use base64::Engine;
 use base64::engine::general_purpose;
 use image::{ImageFormat, ImageReader};
 use std::io::Cursor;
+use std::sync::Arc;
 use tauri::{App, Builder, Manager, Runtime, State, WebviewWindow, command};
 use tokio::task::spawn_blocking;
 
@@ -17,12 +18,12 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
     let window = app
         .get_webview_window("main")
         .context("Main window not found")?;
-    let store = app.state::<ConfigStore>();
+    let store = app.state::<Arc<ConfigStore>>();
 
     let config = store.get::<ThemeConfig>();
     apply_effect(&window, &config);
 
-    if matches!(config.effect, EffectMode::Auto | EffectMode::Mica) {
+    if matches!(config.effect, ThemeEffect::Auto | ThemeEffect::Mica) {
         window.show()?;
     }
 
@@ -30,18 +31,12 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
 }
 
 #[command]
-pub fn get_theme_config(store: State<'_, ConfigStore>) -> ThemeConfig {
-    store.get::<ThemeConfig>()
-}
-
-#[command]
-pub async fn set_theme_config<R: Runtime>(
+pub async fn refresh_window_theme<R: Runtime>(
     window: WebviewWindow<R>,
-    store: State<'_, ConfigStore>,
-    config: ThemeConfig,
+    store: State<'_, Arc<ConfigStore>>,
 ) -> CommandResult<()> {
+    let config = store.get::<ThemeConfig>();
     apply_effect(&window, &config);
-    store.set(config).await?;
     Ok(())
 }
 

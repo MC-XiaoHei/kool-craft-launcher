@@ -19,6 +19,10 @@ pub trait ConfigGroup:
     fn post_process(&mut self) -> Result<()> {
         Ok(())
     }
+
+    fn on_update(&self, old: Self) -> Result<()> {
+        Ok(())
+    }
 }
 
 #[async_trait]

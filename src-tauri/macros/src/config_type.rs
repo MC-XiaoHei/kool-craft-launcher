@@ -7,7 +7,7 @@ pub fn config_type_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
     let input_item = parse_macro_input!(input as Item);
     let span = input_item.span();
 
-    let expanded = quote_spanned! { span=>
+    let expanded = quote_spanned! { span =>
         #[derive(
             std::fmt::Debug,
             std::clone::Clone,

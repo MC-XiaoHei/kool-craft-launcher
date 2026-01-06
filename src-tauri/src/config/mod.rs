@@ -1,3 +1,4 @@
+pub mod codegen;
 pub mod commands;
 pub mod components;
 pub mod migration;

@@ -13,6 +13,8 @@ chrono = "0.4"
 dashmap = "6.1"
 dirs = "6.0"
 futures = "0.3"
+indoc = "2.0"
+inventory = "0.3"
 log = "0.4"
 md5 = "0.8.0"
 os_info = "3.7"
@@ -51,8 +53,8 @@ name = "kool_craft_launcher_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "gen-type-bindings"
-path = "src/gen_type_bindings.rs"
+name = "codegen"
+path = "src/codegen.rs"
 
 [build-dependencies]
 tauri-build = { version = "2.5", features = [] }

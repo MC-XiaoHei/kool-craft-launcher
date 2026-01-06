@@ -1,4 +1,4 @@
-const cacheKey = 'wallpaper_cache'
+const cacheKey = "wallpaper_cache"
 
 export async function cacheWallpaper(base64: string) {
   localStorage.setItem(cacheKey, base64)
@@ -6,6 +6,6 @@ export async function cacheWallpaper(base64: string) {
 
 export function getCachedWallpaper(): string | null {
   const cached = localStorage.getItem(cacheKey)
-  if (cached === '' || !cached) return null
+  if (cached === "" || !cached) return null
   return cached
 }

@@ -1,12 +1,22 @@
 use super::traits::{ConfigGroup, ConfigPersistence};
 use anyhow::{Context, Result, anyhow};
 use log::{info, warn};
+use macros::inventory;
 use parking_lot::{RwLock, RwLockUpgradableReadGuard};
 use schemars::schema_for;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::collections::HashMap;
+use tap::Pipe;
 use tokio::sync::Mutex;
+
+pub type UpdateHandler = fn(Value, Value) -> Result<()>;
+
+#[inventory]
+pub struct UpdateHandlerInfo {
+    pub key: &'static str,
+    pub handler: UpdateHandler,
+}
 
 pub struct ConfigStore {
     values: RwLock<HashMap<String, Value>>,
@@ -25,11 +35,11 @@ impl ConfigStore {
         }
     }
 
-    pub fn export_schemas(&self) -> HashMap<String, Value> {
+    pub fn get_schemas(&self) -> HashMap<String, Value> {
         self.schemas.read().clone()
     }
 
-    pub fn export_values(&self) -> HashMap<String, Value> {
+    pub fn get_values(&self) -> HashMap<String, Value> {
         self.values.read().clone()
     }
 
@@ -63,21 +73,43 @@ impl ConfigStore {
     }
 
     pub async fn set<T: ConfigGroup>(&self, value: T) -> Result<()> {
+        let old = self.get::<T>();
         let key = T::KEY;
-        let json_value = serde_json::to_value(value).context("Config serialization failed")?;
-        self.update(key, json_value).await
+        let json_value =
+            serde_json::to_value(value.clone()).context("Config serialization failed")?;
+        self.update(key, json_value).await;
+        Ok(())
+    }
+
+    pub async fn set_by_key(&self, key: impl Into<String>, value: Value) -> Result<()> {
+        self.update(key.into().as_str(), value).await
     }
 
     async fn update(&self, key: &str, value: Value) -> Result<()> {
         self.validate_key_exists(key)?;
 
-        self.values.write().insert(key.to_string(), value);
+        let old = self
+            .values
+            .write()
+            .insert(key.to_string(), value.clone())
+            .unwrap_or_default();
 
         self.save_config()
             .await
             .context("Failed to persist config")?;
 
+        if let Some(handler) = Self::find_update_handler(key) {
+            handler(value, old)?;
+        }
+
         Ok(())
+    }
+
+    fn find_update_handler(key: &str) -> Option<UpdateHandler> {
+        inventory::iter::<UpdateHandlerInfo>
+            .into_iter()
+            .find(|info| info.key == key)
+            .map(|info| info.handler)
     }
 
     fn get_value<T: ConfigGroup + DeserializeOwned + Default>(&self) -> Result<T> {

@@ -1,14 +1,9 @@
-import { ThemeConfig } from '@/bindings/types'
-import { invoke } from '@tauri-apps/api/core'
-
-export async function getThemeConfig(): Promise<ThemeConfig> {
-  return await invoke<ThemeConfig>('get_theme_config')
-}
-
-export async function setThemeConfig(config: ThemeConfig): Promise<void> {
-  return await invoke<void>('set_theme_config', { config })
-}
+import { invoke } from "@tauri-apps/api/core"
 
 export async function getWallpaperDataUrl(): Promise<string> {
-  return await invoke<string>('get_wallpaper')
+  return await invoke<string>("get_wallpaper")
+}
+
+export async function refreshWindowTheme(): Promise<void> {
+  return await invoke("refresh_window_theme")
 }

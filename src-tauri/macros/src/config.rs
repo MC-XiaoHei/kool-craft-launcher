@@ -7,6 +7,7 @@ struct ConfigArgs {
     name: Option<(LitStr, Span)>,
     evolution: Option<(Path, Span)>,
     post_process: Option<(Path, Span)>,
+    update_handler: Option<(Path, Span)>,
     no_default: bool,
 }
 
@@ -16,6 +17,7 @@ impl ConfigArgs {
             name: None,
             evolution: None,
             post_process: None,
+            update_handler: None,
             no_default: false,
         };
 
@@ -26,6 +28,8 @@ impl ConfigArgs {
                 config.evolution = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("post_process") {
                 config.post_process = Some((meta.value()?.parse()?, meta.path.span()));
+            } else if meta.path.is_ident("update_handler") {
+                config.update_handler = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("no_default") {
                 config.no_default = true;
             } else {
@@ -48,12 +52,14 @@ impl ConfigArgs {
         let derives = self.generate_derives();
         let ide_helper = self.generate_ide_helper(&item.ident, name_lit, *name_span);
         let trait_impl = self.generate_trait_impl(item, name_lit)?;
+        let inventory = self.generate_inventory_submit(&item.ident, name_lit);
 
         Ok(quote! {
             #ide_helper
             #derives
             #item
             #trait_impl
+            #inventory
         })
     }
 
@@ -82,40 +88,36 @@ impl ConfigArgs {
         name_val: &LitStr,
         name_span: Span,
     ) -> proc_macro2::TokenStream {
-        let (evolution_field, evolution_init) = if let Some((path, span)) = &self.evolution {
-            let ident = syn::Ident::new("evolution", *span);
-            (
-                quote! { evolution: fn(&mut serde_json::Value, &std::collections::HashMap<String, serde_json::Value>) -> anyhow::Result<()> },
-                quote_spanned! { *span=> #ident: #path },
-            )
-        } else {
-            (quote! {}, quote! {})
-        };
-
-        let (post_process_field, post_process_init) = if let Some((path, span)) = &self.post_process
-        {
-            (
-                quote! { post_process: fn(&mut #struct_name) -> anyhow::Result<()> },
-                quote_spanned! { *span=> post_process: #path },
-            )
-        } else {
-            (quote! {}, quote! {})
-        };
+        let mut fields = Vec::new();
+        let mut inits = Vec::new();
 
         let name_ident = syn::Ident::new("name", name_span);
+        fields.push(quote! { #name_ident: &'static str });
+        inits.push(quote! { #name_ident: #name_val });
+
+        if let Some((path, span)) = &self.evolution {
+            fields.push(quote_spanned! { *span => evolution: fn(&mut serde_json::Value, &std::collections::HashMap<String, serde_json::Value>) -> anyhow::Result<()> });
+            inits.push(quote_spanned! { *span => evolution: #path });
+        }
+
+        if let Some((path, span)) = &self.post_process {
+            fields.push(quote_spanned! { *span => post_process: fn(&mut #struct_name) -> anyhow::Result<()> });
+            inits.push(quote_spanned! { *span => post_process: #path });
+        }
+
+        if let Some((path, span)) = &self.update_handler {
+            fields.push(quote_spanned! { *span => update_handler: fn(&#struct_name, #struct_name) -> anyhow::Result<()> });
+            inits.push(quote_spanned! { *span => update_handler: #path });
+        }
 
         quote! {
             const _: () = {
                 struct __ConfigSchemaHighlight {
-                    name: &'static str,
-                    #evolution_field
-                    #post_process_field
+                    #(#fields),*
                 }
 
                 let _ = __ConfigSchemaHighlight {
-                    #name_ident: #name_val,
-                    #evolution_init
-                    #post_process_init
+                    #(#inits),*
                 };
             };
         }
@@ -141,6 +143,12 @@ impl ConfigArgs {
             quote! { Ok(()) }
         };
 
+        let update_handler_body = if let Some((handler_path, span)) = &self.update_handler {
+            quote_spanned! { *span=> #handler_path(self, old) }
+        } else {
+            quote! { Ok(()) }
+        };
+
         Ok(quote! {
             impl crate::config::traits::ConfigGroup for #struct_name {
                 const KEY: &'static str = #name_val;
@@ -152,8 +160,52 @@ impl ConfigArgs {
                 fn post_process(&mut self) -> anyhow::Result<()> {
                     #post_process_body
                 }
+
+                fn on_update(&self, old: Self) -> anyhow::Result<()> {
+                    #update_handler_body
+                }
             }
         })
+    }
+
+    fn generate_inventory_submit(
+        &self,
+        struct_name: &syn::Ident,
+        key_lit: &LitStr,
+    ) -> proc_macro2::TokenStream {
+        let name = struct_name.to_string();
+        quote! {
+            inventory::submit! {
+                crate::config::codegen::ConfigGroupInfo {
+                    name: #name,
+                    key: #key_lit,
+                }
+            }
+
+            inventory::submit! {
+                crate::config::commands::ConfigRegisterHook {
+                    handler: |store| {
+                        Box::pin(async move {
+                            store.register::<#struct_name>().await?;
+                            Ok(())
+                        })
+                    }
+                }
+            }
+
+            inventory::submit! {
+                crate::config::store::UpdateHandlerInfo {
+                    key: #key_lit,
+                    handler: |neo, old| {
+                        use crate::config::traits::ConfigGroup;
+                        let old = serde_json::from_value::<#struct_name>(old)?;
+                        let neo = serde_json::from_value::<#struct_name>(neo)?;
+                        neo.on_update(old)?;
+                        Ok(())
+                    }
+                }
+            }
+        }
     }
 }
 
