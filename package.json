@@ -20,7 +20,7 @@
     "tauri:coverage:open": "pnpm tauri:coverage --open",
     "codegen": "cd src-tauri && cargo run --package kool-craft-launcher --bin codegen",
     "sync-metadata": "node sync-metadata.cjs",
-    "postinstall": "pnpm tauri:icon",
+    "postinstall": "pnpm tauri:icon && pnpm codegen",
     "prestart": "pnpm sync-metadata",
     "prebuild": "pnpm sync-metadata",
     "postversion": "pnpm sync-metadata"
