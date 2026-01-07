@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "pnpm sync-metadata && pnpm tauri:dev",
     "build": "pnpm tauri:build",
+    "test": "pnpm tauri:test",
     "frontend:dev": "vite",
     "frontend:build": "vue-tsc --noEmit && vite build",
     "frontend:format": "prettier --write \"src/**/*.{js,ts,vue,json,css,md}\"",
@@ -15,7 +16,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:test": "cd src-tauri && cargo test",
-    "tauri:coverage": "cd src-tauri && cargo +nightly llvm-cov --all-features --branch",
+    "tauri:coverage": "cd src-tauri && cargo +nightly llvm-cov --branch",
     "tauri:coverage:open": "pnpm tauri:coverage --open",
     "codegen": "cd src-tauri && cargo run --package kool-craft-launcher --bin codegen",
     "sync-metadata": "node sync-metadata.cjs",

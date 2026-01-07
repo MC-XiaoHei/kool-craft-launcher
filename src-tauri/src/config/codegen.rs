@@ -22,7 +22,11 @@ impl ConfigGroupInfo {
         formatdoc! { r#"
             watch(
               () => config.value.{key},
-              async val => {{ await setConfig("{key}", val).then().catch(error) }},
+              async val => {{
+                if (watchingConfigStore) {{
+                  await setConfig("{key}", val).then().catch(error)
+                }}
+              }},
               {{ deep: true }},
             )
         "# }
@@ -51,8 +55,19 @@ pub fn get_config_watcher() -> String {
         import {{ config }} from "@/services/backend/config"
         import {{ setConfig }} from "../services/backend/config"
 
+        let watchingConfigStore = false
+
+        export function pauseWatchConfigStore() {{
+          watchingConfigStore = false
+        }}
+
+        export function resumeWatchConfigStore() {{
+          watchingConfigStore = true
+        }}
+
         export function watchConfigStore() {{
         {elements}
+          watchingConfigStore = true
         }}
     "# }
 }

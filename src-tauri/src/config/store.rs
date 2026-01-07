@@ -1,4 +1,5 @@
 use super::traits::{ConfigGroup, ConfigPersistence};
+use crate::config::events::ConfigUpdateEvent;
 use anyhow::{Context, Result, anyhow};
 use log::{info, warn};
 use macros::inventory;
@@ -77,7 +78,7 @@ impl ConfigStore {
         let key = T::KEY;
         let json_value =
             serde_json::to_value(value.clone()).context("Config serialization failed")?;
-        self.update(key, json_value).await;
+        self.update(key, json_value).await?;
         Ok(())
     }
 
@@ -99,10 +100,16 @@ impl ConfigStore {
             .context("Failed to persist config")?;
 
         if let Some(handler) = Self::find_update_handler(key) {
-            handler(value, old)?;
+            handler(value.clone(), old)?;
         }
 
+        self.sync_to_frontend(key, value).await?;
+
         Ok(())
+    }
+
+    async fn sync_to_frontend(&self, key: &str, value: Value) -> Result<()> {
+        ConfigUpdateEvent::new(key, value)?.emit()
     }
 
     fn find_update_handler(key: &str) -> Option<UpdateHandler> {

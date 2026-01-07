@@ -6,3 +6,4 @@ pub mod modules;
 pub mod persistence;
 pub mod store;
 pub mod traits;
+mod events;
