@@ -1,4 +1,4 @@
-use crate::config::modules::theme::{ThemeEffect, ThemeConfig, ThemeMode};
+use crate::config::modules::theme::{ThemeConfig, ThemeEffect, ThemeMode};
 use crate::utils::os_info::{is_macos, is_windows, is_windows_11};
 use log::{info, warn};
 use os_info::Info;

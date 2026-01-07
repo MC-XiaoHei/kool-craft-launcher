@@ -17,7 +17,6 @@ pub mod utils;
 
 use crate::config::commands::setup_config;
 use crate::constants::file_system::LOG_DIR_NAME;
-use utils::codegen::do_codegen;
 use crate::scheduler::commands::setup_scheduler;
 use crate::theme::commands::setup_theme;
 use crate::utils::dirs::app_dir;
@@ -32,6 +31,7 @@ use tap::Pipe;
 use tauri::async_runtime::block_on;
 use tauri::plugin::TauriPlugin;
 use tauri::{App, Builder, Wry};
+use utils::codegen::do_codegen;
 
 #[cfg_attr(coverage_nightly, coverage(off))]
 pub fn run() -> Result<()> {

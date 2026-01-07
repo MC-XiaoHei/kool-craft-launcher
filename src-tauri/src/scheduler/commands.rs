@@ -1,8 +1,8 @@
 #![cfg_attr(coverage_nightly, coverage(off))]
 
-use std::sync::Arc;
 use crate::config::store::ConfigStore;
 use crate::scheduler::Scheduler;
+use std::sync::Arc;
 use tauri::{App, Manager};
 
 pub fn setup_scheduler(app: &mut App) {

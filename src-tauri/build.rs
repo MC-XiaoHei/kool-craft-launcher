@@ -4,7 +4,8 @@ fn main() {
     let mut attributes = tauri_build::Attributes::new();
     #[cfg(windows)]
     {
-        attributes = attributes.windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest());
+        attributes = attributes
+            .windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest());
         add_manifest();
     }
     tauri_build::try_build(attributes).unwrap();
@@ -14,9 +15,7 @@ fn main() {
 fn add_manifest() {
     static WINDOWS_MANIFEST_FILE: &str = "windows-app-manifest.xml";
 
-    let manifest = std::env::current_dir()
-        .unwrap()
-        .join(WINDOWS_MANIFEST_FILE);
+    let manifest = std::env::current_dir().unwrap().join(WINDOWS_MANIFEST_FILE);
 
     println!("cargo:rerun-if-changed={}", manifest.display());
     // Embed the Windows application manifest file.

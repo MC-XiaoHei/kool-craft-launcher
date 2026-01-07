@@ -9,11 +9,11 @@ use crate::utils::dirs::app_dir;
 use anyhow::{Result, anyhow};
 use futures::future::BoxFuture;
 use log::{info, warn};
+use macros::inventory;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use macros::inventory;
 use tap::Pipe;
 use tauri::{App, Builder, Manager, Runtime, State, command};
 
