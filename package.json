@@ -19,9 +19,9 @@
     "tauri:test": "cd src-tauri && cargo test",
     "tauri:coverage": "cd src-tauri && cargo +nightly llvm-cov --branch",
     "tauri:coverage:open": "pnpm tauri:coverage --open",
-    "codegen": "cd src-tauri && cargo run --package kool-craft-launcher --bin codegen",
+    "tauri:codegen": "cd src-tauri && cargo run --package kool-craft-launcher --bin codegen",
     "sync-metadata": "node sync-metadata.cjs",
-    "postinstall": "pnpm tauri:icon && pnpm codegen",
+    "postinstall": "pnpm tauri:icon && pnpm tauri:codegen",
     "prestart": "pnpm sync-metadata",
     "prebuild": "pnpm sync-metadata",
     "postversion": "pnpm sync-metadata"
