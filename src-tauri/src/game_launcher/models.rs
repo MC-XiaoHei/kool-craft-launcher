@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use tap::Pipe;
 use thiserror::Error;
+use crate::auth::microsoft::model::CLIENT_ID;
 
 const DEFAULT_VERSION_INDEPENDENT: bool = true;
 
@@ -162,7 +163,7 @@ impl LaunchRequest {
             quick_play_realms: custom.quick_play.get_realms().unwrap_or_default(),
             launcher_name: LAUNCHER_NAME.into(),
             launcher_version: LAUNCHER_VERSION.into(),
-            client_id: "".into(), // TODO
+            client_id: CLIENT_ID.into(),
             classpath: self.get_classpath_str()?,
         };
 
