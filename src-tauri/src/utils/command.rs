@@ -1,7 +1,8 @@
 use anyhow::Error;
 use serde::Serialize;
+use specta::Type;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Type)]
 pub struct CommandError(String);
 
 impl From<Error> for CommandError {

@@ -1,15 +1,14 @@
 #![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 #![cfg_attr(debug_assertions, allow(unused))]
 
-use std::io::Write;
 mod auth;
-mod commands;
 mod config;
 mod constants;
 mod game_assets;
 mod game_launcher;
 mod game_resolver;
 mod i18n;
+mod ipc;
 mod java_runtime;
 mod scheduler;
 mod theme;
@@ -17,13 +16,13 @@ pub mod utils;
 
 use crate::config::commands::setup_config;
 use crate::constants::file_system::LOG_DIR_NAME;
+use crate::ipc::command::command_handler;
 use crate::scheduler::commands::setup_scheduler;
 use crate::theme::commands::setup_theme;
 use crate::utils::dirs::app_dir;
 use crate::utils::global_app_handle::set_global_app_handle;
 use anyhow::{Context, Result};
 use chrono::Local;
-use commands::register_commands;
 use futures::FutureExt;
 use std::error::Error;
 use std::fmt::Arguments;
@@ -42,7 +41,7 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_http::init())
         .plugin(log_plugin()?)
         .setup(setup_app_handler)
-        .pipe(register_commands)
+        .invoke_handler(command_handler())
         .run(tauri::generate_context!())
         .context("error while running tauri application")?;
 

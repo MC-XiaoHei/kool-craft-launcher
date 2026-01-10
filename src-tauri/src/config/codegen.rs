@@ -33,7 +33,7 @@ impl ConfigGroupInfo {
     }
 }
 
-pub fn get_config_type_def() -> String {
+pub fn generate_config_type_def() -> String {
     let elements = inventory::iter::<ConfigGroupInfo>
         .into_iter()
         .map(|x| x.to_type_element())
@@ -42,7 +42,7 @@ pub fn get_config_type_def() -> String {
     format!("export type ConfigModule = {{ {elements} }}")
 }
 
-pub fn get_config_watcher() -> String {
+pub fn generate_config_watcher() -> String {
     let elements = inventory::iter::<ConfigGroupInfo>
         .into_iter()
         .map(|x| x.to_watch_function())

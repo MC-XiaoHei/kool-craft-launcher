@@ -9,9 +9,10 @@ use anyhow::{Context, anyhow};
 use base64::Engine;
 use base64::engine::general_purpose;
 use image::{ImageFormat, ImageReader};
+use macros::command;
 use std::io::Cursor;
 use std::sync::Arc;
-use tauri::{App, Builder, Manager, Runtime, State, WebviewWindow, command};
+use tauri::{App, Builder, Manager, Runtime, State, WebviewWindow, Wry};
 use tokio::task::spawn_blocking;
 
 pub fn setup_theme(app: &mut App) -> Result<()> {
@@ -31,8 +32,8 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
 }
 
 #[command]
-pub async fn refresh_window_theme<R: Runtime>(
-    window: WebviewWindow<R>,
+pub async fn refresh_window_theme(
+    window: WebviewWindow<Wry>,
     store: State<'_, Arc<ConfigStore>>,
 ) -> CommandResult<()> {
     let config = store.get::<ThemeConfig>();
@@ -41,15 +42,15 @@ pub async fn refresh_window_theme<R: Runtime>(
 }
 
 #[command]
-pub async fn get_wallpaper() -> CommandResult<String> {
-    spawn_blocking(get_wallpaper_data_url)
+pub async fn get_wallpaper_data_url() -> CommandResult<String> {
+    spawn_blocking(get_wallpaper_data_url_sync)
         .await
         .map_err(|e| anyhow!(e))?
         .context("Failed to get wallpaper data")
         .map_err(Into::into)
 }
 
-fn get_wallpaper_data_url() -> Result<String> {
+fn get_wallpaper_data_url_sync() -> Result<String> {
     let path_str = wallpaper::get().map_err(|e| anyhow::anyhow!("System wallpaper error: {e}"))?;
 
     let img = ImageReader::open(&path_str)

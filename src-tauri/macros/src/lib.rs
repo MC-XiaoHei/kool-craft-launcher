@@ -1,11 +1,18 @@
+mod command;
 mod config;
 mod config_type;
 mod inventory;
 
+use crate::command::command_impl;
 use crate::config_type::config_type_impl;
 use crate::inventory::inventory_impl;
 use config::config_impl;
 use proc_macro::TokenStream;
+
+#[proc_macro_attribute]
+pub fn command(args: TokenStream, input: TokenStream) -> TokenStream {
+    command_impl(args, input)
+}
 
 #[proc_macro_attribute]
 pub fn config(args: TokenStream, input: TokenStream) -> TokenStream {

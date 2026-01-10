@@ -1,9 +1,9 @@
 <script lang="ts" setup>
   import { computed, onMounted, ref } from "vue"
   import { getCurrentWindow } from "@tauri-apps/api/window"
-  import { getWallpaperDataUrl, refreshWindowTheme } from "@/services/backend/theme.ts"
+  import { getWallpaperDataUrl, refreshWindowTheme } from "@/bindings/commands.ts"
   import { cacheWallpaper, getCachedWallpaper } from "@/composables/wallpaper.ts"
-  import { ThemeEffect } from "./bindings/types"
+  import { ThemeEffect } from "@/bindings/types.ts"
   import { config } from "@/services/backend/config.ts"
 
   const appWindow = getCurrentWindow()

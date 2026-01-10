@@ -7,8 +7,9 @@ use crate::auth::microsoft::xbox_live_token::get_xbox_live_token;
 use crate::auth::microsoft::xsts_token::get_xsts_token;
 use crate::utils::command::CommandResult;
 use anyhow::Result;
+use macros::command;
 use reqwest::Client;
-use tauri::{AppHandle, Builder, Runtime, command};
+use tauri::{AppHandle, Builder, Runtime};
 
 #[command]
 pub async fn microsoft_account_login(app_handle: AppHandle) -> CommandResult<()> {
