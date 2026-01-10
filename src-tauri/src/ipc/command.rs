@@ -1,4 +1,4 @@
-use crate::utils::codegen::{get_import_list, resolve_ts_type};
+use crate::utils::codegen::{get_import_line, get_import_list, resolve_ts_type};
 use heck::ToLowerCamelCase;
 use indoc::formatdoc;
 use macros::inventory;
@@ -15,17 +15,12 @@ pub struct CommandInfo {
 }
 
 pub fn generate_command_invokers(types: &mut TypeCollection) -> String {
-    let function_defs = get_functions()
+    let function_defs = get_functions(types)
         .into_iter()
         .map(|func| to_invoke_function(func, types))
         .collect::<Vec<_>>()
         .join("\n");
-    let type_import_list = get_import_list(&types).join(", ");
-    let type_import_line = if type_import_list.is_empty() {
-        String::new()
-    } else {
-        format!(r#"import {{ {type_import_list} }} from "@/bindings/types""#)
-    };
+    let type_import_line = get_import_line(types);
 
     formatdoc! { r#"
         import {{ invoke }} from "@tauri-apps/api/core"
@@ -102,10 +97,9 @@ fn to_invoke_function(function: Function, types: &TypeCollection) -> String {
     "# }
 }
 
-fn get_functions() -> Vec<Function> {
-    let mut type_map = TypeCollection::default();
+fn get_functions(types: &mut TypeCollection) -> Vec<Function> {
     inventory::iter::<CommandInfo>
         .into_iter()
-        .flat_map(|cmd| (cmd.function_info)(&mut type_map))
+        .flat_map(|cmd| (cmd.function_info)(types))
         .collect()
 }

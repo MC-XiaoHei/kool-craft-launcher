@@ -50,8 +50,8 @@ pub fn command_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
             inventory::submit! {
                 crate::ipc::command::CommandInfo {
                     name: #fn_name_str,
-                    function_info: |type_map| {
-                        specta::function::collect_functions![#fn_name](type_map)
+                    function_info: |types| {
+                        specta::function::collect_functions![#fn_name](types)
                     },
                     tauri_handler: |invoke| {
                         #wrapper_ident(invoke)

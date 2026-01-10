@@ -1,12 +1,13 @@
 use crate::config::traits::ConfigGroup;
 use crate::utils::global_app_handle::get_global_app_handle;
 use anyhow::Result;
+use macros::event;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use specta::Type;
-use tauri::Emitter;
+use tauri::{Emitter, EventTarget};
 
-#[derive(Debug, Clone, Serialize, Type)]
+#[event]
 pub struct ConfigUpdateEvent {
     pub key: String,
     pub value: String,
@@ -18,10 +19,5 @@ impl ConfigUpdateEvent {
             key: key.into(),
             value: serde_json::to_string(&value)?,
         })
-    }
-
-    pub fn emit(&self) -> Result<()> {
-        get_global_app_handle()?.emit("config_update_event", self)?;
-        Ok(())
     }
 }

@@ -1,8 +1,8 @@
 import { pauseWatchConfigStore, resumeWatchConfigStore, watchConfigStore } from "@/bindings/config"
-import { ConfigModule, ConfigUpdateEvent } from "@/bindings/types"
+import { ConfigModule } from "@/bindings/types"
 import { nextTick, ref } from "vue"
-import { listen } from "@tauri-apps/api/event"
 import { getConfigValuesJson, setConfig as invokeSetConfig } from "@/bindings/commands"
+import { listenConfigUpdateEvent } from "@/bindings/events"
 
 export const config = ref<ConfigModule>(await getConfig())
 
@@ -17,9 +17,8 @@ export async function setConfig<T>(key: string, value: T): Promise<void> {
   await invokeSetConfig(key, json)
 }
 
-await listen<ConfigUpdateEvent>("config_update_event", async event => {
-  const payload = event.payload
-  const { key, value } = payload
+await listenConfigUpdateEvent(async event => {
+  const { key, value } = event
   const entry = JSON.parse(value)
   pauseWatchConfigStore()
   // @ts-ignore
