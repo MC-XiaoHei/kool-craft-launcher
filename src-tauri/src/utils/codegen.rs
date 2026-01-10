@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use crate::config::codegen::{generate_config_type_def, generate_config_watcher};
 use crate::utils::codegen::unwrap_safe::{gen_command_invokers, gen_config_watcher, gen_types};
 use specta::datatype::{FunctionResultVariant, PrimitiveType};

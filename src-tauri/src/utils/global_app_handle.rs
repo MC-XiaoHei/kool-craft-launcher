@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use anyhow::{Result, anyhow};
 use std::sync::OnceLock;
 use tap::Pipe;

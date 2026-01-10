@@ -1,3 +1,4 @@
+use crate::auth::microsoft::model::CLIENT_ID;
 use crate::auth::models::PlayerProfile;
 use crate::auth::models::UserType::Demo;
 use crate::constants::launcher::{LAUNCHER_NAME, LAUNCHER_VERSION, SHORT_LAUNCHER_NAME};
@@ -17,7 +18,6 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use tap::Pipe;
 use thiserror::Error;
-use crate::auth::microsoft::model::CLIENT_ID;
 
 const DEFAULT_VERSION_INDEPENDENT: bool = true;
 

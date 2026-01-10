@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use crate::utils::codegen::indent_all;
 use indoc::formatdoc;
 use macros::inventory;

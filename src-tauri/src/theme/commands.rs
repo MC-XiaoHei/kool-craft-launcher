@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use crate::config::modules::theme::{ThemeConfig, ThemeEffect};
 use crate::config::store::ConfigStore;
 use crate::theme::effect::apply_effect;

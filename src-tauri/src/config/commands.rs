@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use crate::config::modules::theme::ThemeConfig;
 use crate::config::persistence::FilePersistence;
 use crate::config::store::ConfigStore;

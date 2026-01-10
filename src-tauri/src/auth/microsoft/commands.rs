@@ -1,5 +1,3 @@
-#![cfg_attr(coverage_nightly, coverage(off))]
-
 use crate::auth::microsoft::game_profile::get_game_profile;
 use crate::auth::microsoft::microsoft_login::get_microsoft_token;
 use crate::auth::microsoft::minecraft_token::get_minecraft_token;

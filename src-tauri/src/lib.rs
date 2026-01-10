@@ -32,7 +32,6 @@ use tauri::plugin::TauriPlugin;
 use tauri::{App, Builder, Wry};
 use utils::codegen::do_codegen;
 
-#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn run() -> Result<()> {
     #[cfg(debug_assertions)]
     do_codegen();
@@ -48,7 +47,6 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-#[cfg_attr(coverage_nightly, coverage(off))]
 fn log_plugin() -> Result<TauriPlugin<Wry>> {
     use log::*;
     use tauri_plugin_log::*;
@@ -83,12 +81,10 @@ fn log_plugin() -> Result<TauriPlugin<Wry>> {
     Ok(plugin)
 }
 
-#[cfg_attr(coverage_nightly, coverage(off))]
 fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
     block_on(async { setup_app(app).await }).map_err(|e| e.into())
 }
 
-#[cfg_attr(coverage_nightly, coverage(off))]
 async fn setup_app(app: &mut App) -> Result<()> {
     set_global_app_handle(app)?;
     setup_config(app).await?;
