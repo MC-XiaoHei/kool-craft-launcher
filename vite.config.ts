@@ -1,17 +1,19 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { defineConfig } from "vite"
+import vue from "@vitejs/plugin-vue"
+import tailwindcss from "@tailwindcss/vite"
+import tsconfigPaths from "vite-tsconfig-paths"
+import { resolve } from "path"
 
 const host = process.env.TAURI_DEV_HOST
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  plugins: [vue()],
+  plugins: [vue(), tailwindcss(), tsconfigPaths()],
 
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src')
-    }
+      "@": resolve(__dirname, "src"),
+    },
   },
 
   clearScreen: false,
@@ -21,13 +23,13 @@ export default defineConfig(async () => ({
     host: host || false,
     hmr: host
       ? {
-          protocol: 'ws',
+          protocol: "ws",
           host,
-          port: 1421
+          port: 1421,
         }
       : undefined,
     watch: {
-      ignored: ['**/src-tauri/**']
-    }
-  }
+      ignored: ["**/src-tauri/**"],
+    },
+  },
 }))
