@@ -4,7 +4,7 @@
   import { getWallpaperDataUrl, refreshWindowTheme } from "@/bindings/commands"
   import { cacheWallpaper, getCachedWallpaper } from "@/composables/wallpaper"
   import { ThemeEffect } from "@/bindings/types"
-  import { config } from "@/services/backend/config"
+  import { config } from "@/services/config"
   import { Button } from "@/components/ui/button"
   import { PhMinus, PhX } from "@phosphor-icons/vue"
 

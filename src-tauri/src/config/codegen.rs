@@ -21,7 +21,7 @@ impl ConfigGroupInfo {
             watch(
               () => config.value.{key},
               async val => {{
-                if (watchingConfigStore) {{
+                if (isWatchingConfigStore()) {{
                   await setConfig("{key}", val).then().catch(error)
                 }}
               }},
@@ -50,22 +50,16 @@ pub fn generate_config_watcher() -> String {
     formatdoc! { r#"
         import {{ watch }} from "vue"
         import {{ error }} from "@tauri-apps/plugin-log"
-        import {{ config }} from "@/services/backend/config"
-        import {{ setConfig }} from "../services/backend/config"
-
-        let watchingConfigStore = false
-
-        export function pauseWatchConfigStore() {{
-          watchingConfigStore = false
-        }}
-
-        export function resumeWatchConfigStore() {{
-          watchingConfigStore = true
-        }}
+        import {{
+            config,
+            setConfig,
+            resumeWatchConfigStore,
+            isWatchingConfigStore
+        }} from "@/services/config"
 
         export function watchConfigStore() {{
         {elements}
-          watchingConfigStore = true
+          resumeWatchConfigStore()
         }}
     "# }
 }
