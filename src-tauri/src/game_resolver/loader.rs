@@ -83,7 +83,7 @@ mod tests {
         let result = loader.load_manifest(root_path, "non-existent").await;
 
         assert!(
-            matches!(result, Err(_)),
+            result.is_err(),
             "Should return error when file is missing, but got: {:?}",
             result
         );
@@ -109,7 +109,7 @@ mod tests {
         let result = loader.load_manifest(root_path, "bad_json").await;
 
         assert!(
-            matches!(result, Err(_)),
+            result.is_err(),
             "Should return error on invalid JSON, but got: {:?}",
             result
         );

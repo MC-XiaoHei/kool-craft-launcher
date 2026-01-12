@@ -45,21 +45,21 @@ fn apply_config_effect<R: Runtime>(
     is_dark: bool,
 ) {
     match effect {
-        ThemeEffect::Mica if is_windows(&info) => {
+        ThemeEffect::Mica if is_windows(info) => {
             apply_mica(window, is_dark);
         }
 
-        ThemeEffect::Vibrancy if is_macos(&info) => {
+        ThemeEffect::Vibrancy if is_macos(info) => {
             apply_vibrancy(window, is_dark);
         }
 
         ThemeEffect::Wallpaper => {}
 
-        _ if is_windows_11(&info) => {
+        _ if is_windows_11(info) => {
             apply_mica(window, is_dark);
         }
 
-        _ if is_macos(&info) => {
+        _ if is_macos(info) => {
             apply_vibrancy(window, is_dark);
         }
 

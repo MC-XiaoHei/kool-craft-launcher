@@ -124,7 +124,7 @@ mod cancellation_specs {
 
         let _permit = semaphore.clone().try_acquire_owned().unwrap();
 
-        let token = tokio_util::sync::CancellationToken::new();
+        let token = CancellationToken::new();
         let ctx = Context {
             race_ctx: None,
             semaphore: semaphore.clone(),
@@ -153,7 +153,7 @@ mod cancellation_specs {
             semaphore: Arc::new(tokio::sync::Semaphore::new(10)),
             registry: Arc::new(dashmap::DashMap::new()),
             parent_id: None,
-            cancel_token: tokio_util::sync::CancellationToken::new(),
+            cancel_token: CancellationToken::new(),
         };
         let token_clone = ctx.cancel_token.clone();
 
@@ -187,7 +187,7 @@ mod priority_specs {
             semaphore: semaphore.clone(),
             registry: Arc::new(dashmap::DashMap::new()),
             parent_id: None,
-            cancel_token: tokio_util::sync::CancellationToken::new(),
+            cancel_token: CancellationToken::new(),
         };
 
         let critical_task = task("vip", |_| async { Ok("VIP Pass") }).critical();

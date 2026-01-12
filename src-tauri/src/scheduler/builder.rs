@@ -12,7 +12,7 @@ where
     F: Fn(In, Context) -> Fut + Send + Sync,
     Fut: Future<Output = Result<Out>> + Send,
 {
-    FnTask::new(&name.into(), func)
+    FnTask::new(name.into(), func)
 }
 
 pub fn task<F, Fut, In, Out>(
@@ -24,7 +24,7 @@ where
     Fut: Future<Output = Result<Out>> + Send + 'static,
     In: Send + 'static,
 {
-    FnTask::new(&name.into(), move |input: In, _: Context| func(input))
+    FnTask::new(name.into(), move |input: In, _: Context| func(input))
 }
 
 pub fn pipeline(name: impl Into<String>) -> PipelineStarter {
