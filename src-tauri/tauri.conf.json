@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "kool-craft-launcher",
-        "width": 800,
+        "width": 1067,
         "height": 600,
         "decorations": false,
         "transparent": true,

@@ -5,7 +5,7 @@ import harmoniesPlugin from "colord/plugins/harmonies"
 import { ref, watch } from "vue"
 
 extend([mixPlugin, namesPlugin, harmoniesPlugin])
-export const primaryHex = ref("#08979c") // TODO: move into settings
+export const primaryHex = ref("#01ca8a") // TODO: move into settings
 
 export function initTheme() {
   updateTheme(primaryHex.value)
