@@ -1,7 +1,8 @@
 <script setup lang="ts">
-  import Spacer from "@/components/ui/spacer/Spacer.vue"
   import { Button } from "@/components/ui/button"
   import { PhCube, PhFaders, PhPuzzlePiece, PhScroll } from "@phosphor-icons/vue"
+  import { Separator } from "@/components/ui/separator"
+  import { Spacer } from "@/components/ui/spacer"
 
   const instanceInfos = [
     { icon: PhCube, label: "1.20.4", key: "version" },
@@ -31,18 +32,23 @@
     </div>
 
     <div class="pb-10 px-10 flex items-end h-26 w-full gap-4">
-      <div
-        class="flex items-center justify-center gap-2 group"
-        v-for="info in instanceInfos"
-        :key="info.key"
-      >
-        <component
-          :is="info.icon"
-          class="text-muted-foreground size-6 group-hover:text-primary transition-colors"
-          weight="fill"
-        />
-        <div class="text-xl leading-none">{{ info.label }}</div>
-      </div>
+      <template v-for="(info, index) in instanceInfos" :key="info.label">
+        <div class="flex items-center justify-center gap-2 group">
+          <component
+            :is="info.icon"
+            class="text-muted-foreground size-5 group-hover:text-primary transition-colors"
+            weight="fill"
+          />
+          <div class="text-lg font-bold leading-none">{{ info.label }}</div>
+
+          <Separator
+            v-if="index < instanceInfos.length - 1"
+            orientation="vertical"
+            class="mx-4 h-6!"
+          />
+        </div>
+      </template>
+
       <Spacer />
       <Button
         class="size-16 rounded-xl shadow-sm transition-shadow duration-300 hover:shadow-lg hover:bg-background! dark:dark:bg-input/30! group"
