@@ -33,7 +33,7 @@
 
     <div class="pb-10 px-10 flex items-end h-26 w-full gap-4">
       <template v-for="(info, index) in instanceInfos" :key="info.label">
-        <div class="flex items-center justify-center gap-2 group">
+        <div class="flex items-center justify-center gap-2 group opacity-80">
           <component
             :is="info.icon"
             class="text-muted-foreground size-5 group-hover:text-primary transition-colors"
@@ -44,7 +44,7 @@
           <Separator
             v-if="index < instanceInfos.length - 1"
             orientation="vertical"
-            class="mx-4 h-6!"
+            class="mx-4 h-6! w-px! transform-gpu"
           />
         </div>
       </template>
