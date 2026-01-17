@@ -9,7 +9,7 @@
 
   const navItems = [
     { icon: PhHouse, label: "Home", path: "/" },
-    { icon: PhSquaresFour, label: "Dashboard", path: "/dashboard" },
+    { icon: PhSquaresFour, label: "Library", path: "/library" },
     { icon: PhShoppingBag, label: "Shop", path: "/shop" },
   ]
 
