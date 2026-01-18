@@ -44,7 +44,7 @@
           <Separator
             v-if="index < instanceInfos.length - 1"
             orientation="vertical"
-            class="mx-4 h-6! w-px! transform-gpu"
+            class="mx-4 h-6! w-px!"
           />
         </div>
       </template>
