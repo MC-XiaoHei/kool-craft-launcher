@@ -8,9 +8,9 @@
   const route = useRoute()
 
   const navItems = [
-    { icon: PhHouse, label: "Home", path: "/" },
-    { icon: PhSquaresFour, label: "Library", path: "/library" },
-    { icon: PhShoppingBag, label: "Shop", path: "/shop" },
+    { icon: PhHouse, label: "主页", path: "/" },
+    { icon: PhSquaresFour, label: "实例库", path: "/library" },
+    { icon: PhShoppingBag, label: "资源", path: "/resource" },
   ]
 
   const isActive = (path: string) => route?.path === path
