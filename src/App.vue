@@ -67,6 +67,7 @@
         <RouterView v-slot="{ Component }">
           <Transition :name="transitionName">
             <component
+              data-tauri-drag-region
               :is="Component"
               class="absolute top-0 left-0 w-full h-full backface-hidden"
             />
