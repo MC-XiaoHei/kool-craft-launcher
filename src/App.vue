@@ -61,7 +61,7 @@
       <AppSidebar />
 
       <div
-        class="relative bg-background rounded-lg size-full shadow-sm overflow-hidden perspective-1000"
+        class="relative bg-background rounded-lg size-full shadow-sm overflow-hidden perspective-distant backface-hidden"
         data-tauri-drag-region
       >
         <RouterView v-slot="{ Component }">
@@ -138,14 +138,5 @@
     opacity: 1;
     transform: scale(1);
     z-index: 1;
-  }
-</style>
-
-<style scoped>
-  .perspective-1000 {
-    perspective: 1000px;
-  }
-  .backface-hidden {
-    backface-visibility: hidden;
   }
 </style>
