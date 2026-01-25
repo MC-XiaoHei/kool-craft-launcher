@@ -3,7 +3,7 @@ use proc_macro2::Span;
 use quote::{quote, quote_spanned};
 use syn::{ItemStruct, LitStr, Path, parse::Parser, parse_macro_input, spanned::Spanned};
 
-struct ConfigArgs {
+struct SettingsArgs {
     name: Option<(LitStr, Span)>,
     evolution: Option<(Path, Span)>,
     post_process: Option<(Path, Span)>,
@@ -11,9 +11,9 @@ struct ConfigArgs {
     no_default: bool,
 }
 
-impl ConfigArgs {
+impl SettingsArgs {
     fn parse(args: TokenStream) -> syn::Result<Self> {
-        let mut config = ConfigArgs {
+        let mut settings = SettingsArgs {
             name: None,
             evolution: None,
             post_process: None,
@@ -23,24 +23,24 @@ impl ConfigArgs {
 
         let parser = syn::meta::parser(|meta| {
             if meta.path.is_ident("name") {
-                config.name = Some((meta.value()?.parse()?, meta.path.span()));
+                settings.name = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("evolution") {
-                config.evolution = Some((meta.value()?.parse()?, meta.path.span()));
+                settings.evolution = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("post_process") {
-                config.post_process = Some((meta.value()?.parse()?, meta.path.span()));
+                settings.post_process = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("update_handler") {
-                config.update_handler = Some((meta.value()?.parse()?, meta.path.span()));
+                settings.update_handler = Some((meta.value()?.parse()?, meta.path.span()));
             } else if meta.path.is_ident("no_default") {
-                config.no_default = true;
+                settings.no_default = true;
             } else {
-                return Err(meta.error("unsupported config property"));
+                return Err(meta.error("unsupported settings property"));
             }
             Ok(())
         });
 
         parser.parse(args)?;
 
-        Ok(config)
+        Ok(settings)
     }
 
     fn expand(&self, item: &ItemStruct) -> syn::Result<proc_macro2::TokenStream> {
@@ -112,11 +112,11 @@ impl ConfigArgs {
 
         quote! {
             const _: () = {
-                struct __ConfigSchemaHighlight {
+                struct __SettingsSchemaHighlight {
                     #(#fields),*
                 }
 
-                let _ = __ConfigSchemaHighlight {
+                let _ = __SettingsSchemaHighlight {
                     #(#inits),*
                 };
             };
@@ -132,7 +132,7 @@ impl ConfigArgs {
         let name_val = name.value();
 
         let evolution_body = if let Some((handler_path, span)) = &self.evolution {
-            quote_spanned! { *span=> #handler_path(current, all_configs) }
+            quote_spanned! { *span=> #handler_path(current, all_settingss) }
         } else {
             quote! { Ok(()) }
         };
@@ -150,10 +150,10 @@ impl ConfigArgs {
         };
 
         Ok(quote! {
-            impl crate::config::traits::ConfigGroup for #struct_name {
+            impl crate::settings::traits::SettingsGroup for #struct_name {
                 const KEY: &'static str = #name_val;
 
-                fn evolve(current: &mut serde_json::Value, all_configs: &std::collections::HashMap<String, serde_json::Value>) -> anyhow::Result<()> {
+                fn evolve(current: &mut serde_json::Value, all_settingss: &std::collections::HashMap<String, serde_json::Value>) -> anyhow::Result<()> {
                     #evolution_body
                 }
 
@@ -176,14 +176,14 @@ impl ConfigArgs {
         let name = struct_name.to_string();
         quote! {
             inventory::submit! {
-                crate::config::codegen::ConfigGroupInfo {
+                crate::settings::codegen::SettingsGroupInfo {
                     name: #name,
                     key: #key_lit,
                 }
             }
 
             inventory::submit! {
-                crate::config::commands::ConfigRegisterHook {
+                crate::settings::commands::SettingsRegisterHook {
                     handler: |store| {
                         Box::pin(async move {
                             store.register::<#struct_name>().await?;
@@ -194,10 +194,10 @@ impl ConfigArgs {
             }
 
             inventory::submit! {
-                crate::config::store::UpdateHandlerInfo {
+                crate::settings::store::UpdateHandlerInfo {
                     key: #key_lit,
                     handler: |neo, old| {
-                        use crate::config::traits::ConfigGroup;
+                        use crate::settings::traits::SettingsGroup;
                         let old = serde_json::from_value::<#struct_name>(old)?;
                         let neo = serde_json::from_value::<#struct_name>(neo)?;
                         neo.on_update(old)?;
@@ -209,10 +209,10 @@ impl ConfigArgs {
     }
 }
 
-pub fn config_impl(args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn settings_impl(args: TokenStream, input: TokenStream) -> TokenStream {
     let item_struct = parse_macro_input!(input as ItemStruct);
 
-    match ConfigArgs::parse(args).and_then(|args| args.expand(&item_struct)) {
+    match SettingsArgs::parse(args).and_then(|args| args.expand(&item_struct)) {
         Ok(expanded) => TokenStream::from(expanded),
         Err(err) => TokenStream::from(err.to_compile_error()),
     }

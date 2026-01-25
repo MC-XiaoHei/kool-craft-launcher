@@ -1,25 +1,27 @@
-use crate::config::traits::ConfigGroup;
+use crate::settings::traits::SettingsGroup;
 use crate::theme::effect::apply_effect;
 use crate::utils::global_app_handle::get_global_app_handle;
 use anyhow::Result;
 use log::info;
-use macros::{config, config_type};
+use macros::{settings, settings_type};
 use tauri::Manager;
+use crate::settings::components::Password;
 
-#[config(name = "theme", post_process = post_process, update_handler = on_update)]
+#[settings(name = "theme", post_process = post_process, update_handler = on_update)]
 #[serde(rename_all = "camelCase")]
-pub struct ThemeConfig {
+pub struct ThemeSettings {
     pub effect: ThemeEffect,
     pub mode: ThemeMode,
+    pub test: Password,
 }
 
-fn post_process(config: &mut ThemeConfig) -> Result<()> {
+fn post_process(settings: &mut ThemeSettings) -> Result<()> {
     let os_info = os_info::get();
-    config.sanitize(&os_info);
+    settings.sanitize(&os_info);
     Ok(())
 }
 
-fn on_update(neo: &ThemeConfig, _old: ThemeConfig) -> Result<()> {
+fn on_update(neo: &ThemeSettings, _old: ThemeSettings) -> Result<()> {
     get_global_app_handle()?
         .webview_windows()
         .values()
@@ -27,7 +29,7 @@ fn on_update(neo: &ThemeConfig, _old: ThemeConfig) -> Result<()> {
     Ok(())
 }
 
-#[config_type]
+#[settings_type]
 #[derive(Default, PartialEq, Eq)]
 pub enum ThemeEffect {
     #[default]
@@ -37,7 +39,7 @@ pub enum ThemeEffect {
     Wallpaper,
 }
 
-#[config_type]
+#[settings_type]
 #[derive(Default, PartialEq, Eq)]
 pub enum ThemeMode {
     #[default]

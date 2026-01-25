@@ -1,4 +1,4 @@
-use crate::config::traits::ConfigPersistence;
+use crate::settings::traits::SettingsPersistence;
 use anyhow::Context;
 use async_trait::async_trait;
 use std::path::PathBuf;
@@ -46,7 +46,7 @@ impl FilePersistence {
 
         if let Err(e) = rename(&temp_path, &self.path).await {
             let _ = remove_file(&temp_path).await;
-            return Err(anyhow::anyhow!("Failed to rename config file: {e}"));
+            return Err(anyhow::anyhow!("Failed to rename settings file: {e}"));
         }
 
         Ok(())
@@ -54,7 +54,7 @@ impl FilePersistence {
 }
 
 #[async_trait]
-impl ConfigPersistence for FilePersistence {
+impl SettingsPersistence for FilePersistence {
     async fn load(&self) -> anyhow::Result<Option<String>> {
         match read_to_string(&self.path).await {
             Ok(content) => Ok(Some(content)),

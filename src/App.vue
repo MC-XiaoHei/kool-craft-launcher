@@ -4,12 +4,13 @@
   import { useRouter } from "vue-router"
   import { loadWallpaper } from "@/services/wallpaper"
   import { ThemeEffect } from "@/bindings/types"
-  import { config } from "@/services/config"
+  import { settings } from "@/services/settings"
   import AppBackground from "@/components/app/AppBackground.vue"
   import WindowControls from "@/components/app/WindowControls.vue"
   import AppSidebar from "@/components/app/AppSidebar.vue"
   import { listenToSystemThemeChanges } from "@/services/dark"
   import { initTheme } from "@/services/theme"
+  import { getSettingsSchemas } from "@/bindings/commands"
 
   const appWindow = getCurrentWindow()
   const overlayOpacity = ref(1)
@@ -30,20 +31,21 @@
   onMounted(async () => {
     initTheme()
     listenToSystemThemeChanges()
-    await applyEffect(config.value.theme.effect, true)
+    await applyEffect(settings.value.theme.effect, true)
     await appWindow.show()
     await appWindow.setFocus()
+    console.log(JSON.stringify(await getSettingsSchemas()))
   })
 
   async function applyEffect(target: ThemeEffect, force = false) {
-    if (!force && config.value.theme.effect === target) return
+    if (!force && settings.value.theme.effect === target) return
     if (target === "Wallpaper") {
       await loadWallpaper()
       overlayOpacity.value = 1
       await new Promise(r => setTimeout(r, 200))
-      config.value.theme.effect = target
+      settings.value.theme.effect = target
     } else {
-      config.value.theme.effect = target
+      settings.value.theme.effect = target
       overlayOpacity.value = 0
       loadWallpaper().then()
     }

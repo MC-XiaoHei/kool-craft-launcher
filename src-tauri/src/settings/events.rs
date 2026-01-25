@@ -1,4 +1,4 @@
-use crate::config::traits::ConfigGroup;
+use crate::settings::traits::SettingsGroup;
 use crate::utils::global_app_handle::get_global_app_handle;
 use anyhow::Result;
 use macros::event;
@@ -8,12 +8,12 @@ use specta::Type;
 use tauri::{Emitter, EventTarget};
 
 #[event]
-pub struct ConfigUpdateEvent {
+pub struct SettingsUpdateEvent {
     pub key: String,
     pub value: String,
 }
 
-impl ConfigUpdateEvent {
+impl SettingsUpdateEvent {
     pub fn new(key: impl Into<String>, value: Value) -> Result<Self> {
         Ok(Self {
             key: key.into(),

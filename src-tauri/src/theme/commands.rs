@@ -1,5 +1,5 @@
-use crate::config::modules::theme::{ThemeConfig, ThemeEffect};
-use crate::config::store::ConfigStore;
+use crate::settings::modules::theme::{ThemeSettings, ThemeEffect};
+use crate::settings::store::SettingsStore;
 use crate::theme::effect::apply_effect;
 use crate::utils::command::CommandResult;
 use anyhow::Result;
@@ -17,12 +17,12 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
     let window = app
         .get_webview_window("main")
         .context("Main window not found")?;
-    let store = app.state::<Arc<ConfigStore>>();
+    let store = app.state::<Arc<SettingsStore>>();
 
-    let config = store.get::<ThemeConfig>();
-    apply_effect(&window, &config);
+    let settings = store.get::<ThemeSettings>();
+    apply_effect(&window, &settings);
 
-    if matches!(config.effect, ThemeEffect::Auto | ThemeEffect::Mica) {
+    if matches!(settings.effect, ThemeEffect::Auto | ThemeEffect::Mica) {
         window.show()?;
     }
 
@@ -32,10 +32,10 @@ pub fn setup_theme(app: &mut App) -> Result<()> {
 #[command]
 pub async fn refresh_window_theme(
     window: WebviewWindow<Wry>,
-    store: State<'_, Arc<ConfigStore>>,
+    store: State<'_, Arc<SettingsStore>>,
 ) -> CommandResult<()> {
-    let config = store.get::<ThemeConfig>();
-    apply_effect(&window, &config);
+    let settings = store.get::<ThemeSettings>();
+    apply_effect(&window, &settings);
     Ok(())
 }
 

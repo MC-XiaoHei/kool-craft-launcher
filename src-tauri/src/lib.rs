@@ -2,7 +2,7 @@
 #![cfg_attr(debug_assertions, allow(unused))]
 
 mod auth;
-mod config;
+mod settings;
 mod constants;
 mod game_assets;
 mod game_launcher;
@@ -14,7 +14,7 @@ mod scheduler;
 mod theme;
 pub mod utils;
 
-use crate::config::commands::setup_config;
+use crate::settings::commands::setup_settings;
 use crate::constants::file_system::LOG_DIR_NAME;
 use crate::ipc::command::command_handler;
 use crate::scheduler::commands::setup_scheduler;
@@ -87,7 +87,7 @@ fn setup_app_handler(app: &mut App) -> Result<(), Box<dyn Error>> {
 
 async fn setup_app(app: &mut App) -> Result<()> {
     set_global_app_handle(app)?;
-    setup_config(app).await?;
+    setup_settings(app).await?;
     setup_theme(app)?;
     setup_scheduler(app);
     Ok(())

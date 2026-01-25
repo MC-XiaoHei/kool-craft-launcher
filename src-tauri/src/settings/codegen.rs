@@ -3,12 +3,12 @@ use indoc::formatdoc;
 use macros::inventory;
 
 #[inventory]
-pub struct ConfigGroupInfo {
+pub struct SettingsGroupInfo {
     pub name: &'static str,
     pub key: &'static str,
 }
 
-impl ConfigGroupInfo {
+impl SettingsGroupInfo {
     fn to_type_element(&self) -> String {
         let name = self.name;
         let key = self.key;
@@ -19,10 +19,10 @@ impl ConfigGroupInfo {
         let key = self.key;
         formatdoc! { r#"
             watch(
-              () => config.value.{key},
+              () => settings.value.{key},
               async val => {{
-                if (isWatchingConfigStore()) {{
-                  await setConfig("{key}", val).then().catch(error)
+                if (isWatchingSettingsStore()) {{
+                  await setSettings("{key}", val).then().catch(error)
                 }}
               }},
               {{ deep: true }},
@@ -31,17 +31,17 @@ impl ConfigGroupInfo {
     }
 }
 
-pub fn generate_config_type_def() -> String {
-    let elements = inventory::iter::<ConfigGroupInfo>
+pub fn generate_settings_type_def() -> String {
+    let elements = inventory::iter::<SettingsGroupInfo>
         .into_iter()
         .map(|x| x.to_type_element())
         .collect::<Vec<_>>()
         .join("; ");
-    format!("export type ConfigModule = {{ {elements} }}")
+    format!("export type SettingsModule = {{ {elements} }}")
 }
 
-pub fn generate_config_watcher() -> String {
-    let elements = inventory::iter::<ConfigGroupInfo>
+pub fn generate_settings_watcher() -> String {
+    let elements = inventory::iter::<SettingsGroupInfo>
         .into_iter()
         .map(|x| x.to_watch_function())
         .map(|x| indent_all(x, 2))
@@ -51,15 +51,15 @@ pub fn generate_config_watcher() -> String {
         import {{ watch }} from "vue"
         import {{ error }} from "@tauri-apps/plugin-log"
         import {{
-            config,
-            setConfig,
-            resumeWatchConfigStore,
-            isWatchingConfigStore
-        }} from "@/services/config"
+            settings,
+            setSettings,
+            resumeWatchSettingsStore,
+            isWatchingSettingsStore
+        }} from "@/services/settings"
 
-        export function watchConfigStore() {{
+        export function watchSettingsStore() {{
         {elements}
-          resumeWatchConfigStore()
+          resumeWatchSettingsStore()
         }}
     "# }
 }

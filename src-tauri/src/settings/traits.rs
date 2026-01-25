@@ -7,12 +7,12 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
-pub trait ConfigGroup:
+pub trait SettingsGroup:
     Serialize + DeserializeOwned + JsonSchema + Default + Debug + Clone + Send + Sync + 'static
 {
     const KEY: &'static str;
 
-    fn evolve(_current: &mut Value, _all_configs: &HashMap<String, Value>) -> Result<()> {
+    fn evolve(_current: &mut Value, _all_settings: &HashMap<String, Value>) -> Result<()> {
         Ok(())
     }
 
@@ -26,7 +26,7 @@ pub trait ConfigGroup:
 }
 
 #[async_trait]
-pub trait ConfigPersistence: Send + Sync {
+pub trait SettingsPersistence: Send + Sync {
     async fn load(&self) -> Result<Option<String>>;
     async fn save(&self, content: String) -> Result<()>;
     fn source_description(&self) -> String;

@@ -15,7 +15,7 @@ macro_rules! define_component {
 
             fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
                 let base_schema = <$base>::json_schema(generator);
-                $crate::config::macros::inject(base_schema, $component)
+                $crate::settings::macros::inject(base_schema, $component)
             }
         }
 

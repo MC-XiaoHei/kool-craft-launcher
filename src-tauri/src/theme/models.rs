@@ -1,9 +1,9 @@
-use crate::config::modules::theme::{ThemeConfig, ThemeEffect};
+use crate::settings::modules::theme::{ThemeSettings, ThemeEffect};
 use crate::utils::os_info::{is_macos, is_windows};
 use log::warn;
 use os_info::Info;
 
-impl ThemeConfig {
+impl ThemeSettings {
     pub fn sanitize(&mut self, os_info: &Info) {
         if is_windows(os_info) && self.effect == ThemeEffect::Vibrancy {
             self.effect = ThemeEffect::Auto;
@@ -21,52 +21,55 @@ impl ThemeConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::modules::theme::ThemeMode;
+    use crate::settings::modules::theme::ThemeMode;
     use crate::utils::os_info::mock_info;
     use os_info::Type;
 
     #[test]
-    fn test_macos_config_should_be_sanitize() {
+    fn test_macos_settings_should_be_sanitize() {
         let os_info = mock_info(Type::Windows, "10.0", "x86_64");
 
-        let mut macos_config_should_be_sanitize = ThemeConfig {
+        let mut macos_settings_should_be_sanitize = ThemeSettings {
             effect: ThemeEffect::Vibrancy,
             mode: ThemeMode::Dark,
+            test: Default::default(),
         };
 
-        macos_config_should_be_sanitize.sanitize(&os_info);
+        macos_settings_should_be_sanitize.sanitize(&os_info);
 
-        assert_eq!(macos_config_should_be_sanitize.effect, ThemeEffect::Auto);
-        assert_eq!(macos_config_should_be_sanitize.mode, ThemeMode::Dark);
+        assert_eq!(macos_settings_should_be_sanitize.effect, ThemeEffect::Auto);
+        assert_eq!(macos_settings_should_be_sanitize.mode, ThemeMode::Dark);
     }
 
     #[test]
-    fn test_windows_config_should_be_sanitize() {
+    fn test_windows_settings_should_be_sanitize() {
         let os_info = mock_info(Type::Macos, "14.0", "arm64");
 
-        let mut windows_config_should_be_sanitize = ThemeConfig {
+        let mut windows_settings_should_be_sanitize = ThemeSettings {
             effect: ThemeEffect::Mica,
             mode: ThemeMode::Dark,
+            test: Default::default(),
         };
 
-        windows_config_should_be_sanitize.sanitize(&os_info);
+        windows_settings_should_be_sanitize.sanitize(&os_info);
 
-        assert_eq!(windows_config_should_be_sanitize.effect, ThemeEffect::Auto);
-        assert_eq!(windows_config_should_be_sanitize.mode, ThemeMode::Dark);
+        assert_eq!(windows_settings_should_be_sanitize.effect, ThemeEffect::Auto);
+        assert_eq!(windows_settings_should_be_sanitize.mode, ThemeMode::Dark);
     }
 
     #[test]
-    fn test_config_should_not_be_sanitize() {
+    fn test_settings_should_not_be_sanitize() {
         let os_info = mock_info(Type::Macos, "14.0", "arm64");
 
-        let mut config_should_not_be_sanitize = ThemeConfig {
+        let mut settings_should_not_be_sanitize = ThemeSettings {
             effect: ThemeEffect::Auto,
             mode: ThemeMode::Light,
+            test: Default::default(),
         };
 
-        config_should_not_be_sanitize.sanitize(&os_info);
+        settings_should_not_be_sanitize.sanitize(&os_info);
 
-        assert_eq!(config_should_not_be_sanitize.effect, ThemeEffect::Auto);
-        assert_eq!(config_should_not_be_sanitize.mode, ThemeMode::Light);
+        assert_eq!(settings_should_not_be_sanitize.effect, ThemeEffect::Auto);
+        assert_eq!(settings_should_not_be_sanitize.mode, ThemeMode::Light);
     }
 }

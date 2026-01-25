@@ -1,4 +1,4 @@
-use crate::config::modules::theme::{ThemeConfig, ThemeEffect, ThemeMode};
+use crate::settings::modules::theme::{ThemeSettings, ThemeEffect, ThemeMode};
 use crate::utils::os_info::{is_macos, is_windows, is_windows_11};
 use log::{info, warn};
 use os_info::Info;
@@ -8,16 +8,16 @@ use window_vibrancy::{
 };
 use window_vibrancy::{apply_mica as apply_mica_internal, clear_mica};
 
-pub fn apply_effect<R: Runtime>(window: &WebviewWindow<R>, config: &ThemeConfig) {
+pub fn apply_effect<R: Runtime>(window: &WebviewWindow<R>, settings: &ThemeSettings) {
     let info = os_info::get();
     clear_previous_effect(window, &info);
-    let is_dark = get_is_dark(window, config);
-    apply_config_effect(window, &config.effect, &info, is_dark);
+    let is_dark = get_is_dark(window, settings);
+    apply_settings_effect(window, &settings.effect, &info, is_dark);
 }
 
-fn get_is_dark<R: Runtime>(window: &WebviewWindow<R>, config: &ThemeConfig) -> bool {
+fn get_is_dark<R: Runtime>(window: &WebviewWindow<R>, settings: &ThemeSettings) -> bool {
     let system_is_dark = window.theme().unwrap_or(Theme::Light) == Theme::Dark;
-    match config.mode {
+    match settings.mode {
         ThemeMode::Dark => true,
         ThemeMode::Light => false,
         ThemeMode::Auto => system_is_dark,
@@ -38,7 +38,7 @@ fn clear_previous_effect<R: Runtime>(window: &WebviewWindow<R>, info: &Info) {
     }
 }
 
-fn apply_config_effect<R: Runtime>(
+fn apply_settings_effect<R: Runtime>(
     window: &WebviewWindow<R>,
     effect: &ThemeEffect,
     info: &Info,

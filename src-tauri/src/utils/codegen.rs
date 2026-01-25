@@ -1,6 +1,6 @@
-use crate::config::codegen::{generate_config_type_def, generate_config_watcher};
+use crate::settings::codegen::{generate_settings_type_def, generate_settings_watcher};
 use crate::utils::codegen::unwrap_safe::{
-    gen_command_invokers, gen_config_watcher, gen_event_functions, gen_types,
+    gen_command_invokers, gen_settings_watcher, gen_event_functions, gen_types,
 };
 use specta::datatype::{FunctionResultVariant, PrimitiveType};
 use specta::{DataType, TypeCollection};
@@ -13,7 +13,7 @@ use std::io::Write;
 pub fn do_codegen() {
     let mut types = specta::export();
     gen_types(&types);
-    gen_config_watcher();
+    gen_settings_watcher();
     gen_command_invokers(&mut types);
     gen_event_functions(&types);
 }
@@ -35,12 +35,12 @@ mod unwrap_safe {
         let mut file = OpenOptions::new().append(true).open(path).unwrap();
 
         writeln!(file).unwrap();
-        writeln!(file, "{}", generate_config_type_def()).unwrap();
+        writeln!(file, "{}", generate_settings_type_def()).unwrap();
     }
 
-    pub(super) fn gen_config_watcher() {
-        let path = "../src/bindings/config.ts";
-        let content = generate_config_watcher();
+    pub(super) fn gen_settings_watcher() {
+        let path = "../src/bindings/settings.ts";
+        let content = generate_settings_watcher();
         fs::write(path, content).unwrap();
     }
 
@@ -92,8 +92,8 @@ pub fn resolve_ts_type(data_type: &DataType, types: &TypeCollection) -> String {
 
         _ => {
             let variant = FunctionResultVariant::Value(data_type.clone());
-            let config = Typescript::default();
-            datatype(&config, &variant, types).unwrap_or_else(|_| "any".to_string())
+            let settings = Typescript::default();
+            datatype(&settings, &variant, types).unwrap_or_else(|_| "any".to_string())
         }
     };
 

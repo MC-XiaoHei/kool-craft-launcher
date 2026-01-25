@@ -18,6 +18,6 @@ pub mod minecraft_dir {
 
 pub mod file_system {
     pub const LAUNCHER_DIR_NAME: &str = ".kcl";
-    pub const CONFIG_FILE_NAME: &str = "config.json";
+    pub const SETTINGS_FILE_NAME: &str = "settings.json";
     pub const LOG_DIR_NAME: &str = "logs";
 }

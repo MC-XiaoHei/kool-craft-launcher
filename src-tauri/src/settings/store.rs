@@ -1,5 +1,5 @@
-use super::traits::{ConfigGroup, ConfigPersistence};
-use crate::config::events::ConfigUpdateEvent;
+use super::traits::{SettingsGroup, SettingsPersistence};
+use crate::settings::events::SettingsUpdateEvent;
 use anyhow::{Context, Result, anyhow};
 use log::{info, warn};
 use macros::inventory;
@@ -19,15 +19,15 @@ pub struct UpdateHandlerInfo {
     pub handler: UpdateHandler,
 }
 
-pub struct ConfigStore {
+pub struct SettingsStore {
     values: RwLock<HashMap<String, Value>>,
     schemas: RwLock<HashMap<String, Value>>,
-    persistence: Box<dyn ConfigPersistence>,
+    persistence: Box<dyn SettingsPersistence>,
     write_lock: Mutex<()>,
 }
 
-impl ConfigStore {
-    pub fn new(persistence: Box<dyn ConfigPersistence>) -> Self {
+impl SettingsStore {
+    pub fn new(persistence: Box<dyn SettingsPersistence>) -> Self {
         Self {
             persistence,
             values: RwLock::new(HashMap::new()),
@@ -50,14 +50,14 @@ impl ConfigStore {
         if let Some(content) = self.persistence.load().await? {
             let data = self.try_parse_json(&content)?;
             *self.values.write() = data;
-            info!("Loaded config from {source}");
+            info!("Loaded settings from {source}");
         } else {
-            info!("No config found at {source}, using defaults");
+            info!("No settings found at {source}, using defaults");
         }
         Ok(())
     }
 
-    pub async fn register<T: ConfigGroup>(&self) -> Result<()> {
+    pub async fn register<T: SettingsGroup>(&self) -> Result<()> {
         self.register_schema::<T>()?;
         self.perform_evolution::<T>().await?;
         self.validate_or_default::<T>().await?;
@@ -65,19 +65,19 @@ impl ConfigStore {
         Ok(())
     }
 
-    pub fn get<T: ConfigGroup>(&self) -> T {
+    pub fn get<T: SettingsGroup>(&self) -> T {
         self.get_value::<T>().unwrap_or_else(|e| {
             let key = T::KEY;
-            warn!("Failed to get config '{key}', will using default: {e}");
+            warn!("Failed to get settings '{key}', will using default: {e}");
             T::default()
         })
     }
 
-    pub async fn set<T: ConfigGroup>(&self, value: T) -> Result<()> {
+    pub async fn set<T: SettingsGroup>(&self, value: T) -> Result<()> {
         let old = self.get::<T>();
         let key = T::KEY;
         let json_value =
-            serde_json::to_value(value.clone()).context("Config serialization failed")?;
+            serde_json::to_value(value.clone()).context("Settings serialization failed")?;
         self.update(key, json_value).await?;
         Ok(())
     }
@@ -95,9 +95,9 @@ impl ConfigStore {
             .insert(key.to_string(), value.clone())
             .unwrap_or_default();
 
-        self.save_config()
+        self.save_settings()
             .await
-            .context("Failed to persist config")?;
+            .context("Failed to persist settings")?;
 
         if let Some(handler) = Self::find_update_handler(key) {
             handler(value.clone(), old)?;
@@ -109,7 +109,7 @@ impl ConfigStore {
     }
 
     async fn sync_to_frontend(&self, key: &str, value: Value) -> Result<()> {
-        ConfigUpdateEvent::new(key, value)?.emit()
+        SettingsUpdateEvent::new(key, value)?.emit()
     }
 
     fn find_update_handler(key: &str) -> Option<UpdateHandler> {
@@ -119,17 +119,17 @@ impl ConfigStore {
             .map(|info| info.handler)
     }
 
-    fn get_value<T: ConfigGroup + DeserializeOwned + Default>(&self) -> Result<T> {
+    fn get_value<T: SettingsGroup + DeserializeOwned + Default>(&self) -> Result<T> {
         let key = T::KEY;
         let guard = self.values.read();
         let value = guard
             .get(key)
-            .context(format!("Failed to get config '{key}'"))?;
+            .context(format!("Failed to get settings '{key}'"))?;
         serde_json::from_value(value.clone())
-            .context(format!("Config deserialization failed: {key}"))
+            .context(format!("Settings deserialization failed: {key}"))
     }
 
-    fn register_schema<T: ConfigGroup>(&self) -> Result<()> {
+    fn register_schema<T: SettingsGroup>(&self) -> Result<()> {
         let key = T::KEY;
         let schema = schema_for!(T);
         self.schemas
@@ -138,7 +138,7 @@ impl ConfigStore {
         Ok(())
     }
 
-    async fn perform_evolution<T: ConfigGroup>(&self) -> Result<()> {
+    async fn perform_evolution<T: SettingsGroup>(&self) -> Result<()> {
         let key = T::KEY;
         let all_values_guard = self.values.upgradable_read();
 
@@ -154,12 +154,12 @@ impl ConfigStore {
         Ok(())
     }
 
-    async fn validate_or_default<T: ConfigGroup>(&self) -> Result<()> {
+    async fn validate_or_default<T: SettingsGroup>(&self) -> Result<()> {
         let key = T::KEY;
 
         if let Err(e) = self.get_value::<T>() {
             warn!(
-                "Config '{key}' data is corrupted or mismatched and will resetting to default: {e:?}"
+                "Settings '{key}' data is corrupted or mismatched and will resetting to default: {e:?}"
             );
             self.set(T::default()).await?;
         }
@@ -167,11 +167,11 @@ impl ConfigStore {
         Ok(())
     }
 
-    async fn save_config(&self) -> Result<()> {
+    async fn save_settings(&self) -> Result<()> {
         let _guard = self.write_lock.lock().await;
         let json = serde_json::to_string_pretty(&*self.values.read())?;
         self.persistence.save(json).await?;
-        info!("Config saved to {}", self.persistence.source_description());
+        info!("Settings saved to {}", self.persistence.source_description());
         Ok(())
     }
 
@@ -179,11 +179,11 @@ impl ConfigStore {
         if self.schemas.read().contains_key(key) {
             Ok(())
         } else {
-            Err(anyhow!("Config '{key}' is not registered"))
+            Err(anyhow!("Settings '{key}' is not registered"))
         }
     }
 
     fn try_parse_json(&self, content: &str) -> Result<HashMap<String, Value>> {
-        serde_json::from_str(content).context("Failed to parse config JSON")
+        serde_json::from_str(content).context("Failed to parse settings JSON")
     }
 }
