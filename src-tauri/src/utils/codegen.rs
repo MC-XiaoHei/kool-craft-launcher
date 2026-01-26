@@ -18,7 +18,8 @@ pub fn do_codegen() {
     gen_event_functions(&types);
 }
 
-// use .unwrap() in this mod is safe, because these functions only calls in debug env
+// SAFETY:
+// Build Scope: This mod is guarded by #[cfg(debug_assertions)], so .unwrap() is completely stripped from release builds and poses no risk to production.
 #[cfg(debug_assertions)]
 mod unwrap_safe {
     use super::*;
