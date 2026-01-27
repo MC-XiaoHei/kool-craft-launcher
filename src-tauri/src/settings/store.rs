@@ -6,7 +6,8 @@ use macros::inventory;
 use parking_lot::{RwLock, RwLockUpgradableReadGuard};
 use schemars::schema_for;
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::Value::Null;
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use tap::Pipe;
 use tokio::sync::Mutex;
@@ -52,7 +53,7 @@ impl SettingsStore {
             *self.values.write() = data;
             info!("Loaded settings from {source}");
         } else {
-            info!("No settings found at {source}, using defaults");
+            info!("No settings found at {source}, will using defaults");
         }
         Ok(())
     }
@@ -99,7 +100,9 @@ impl SettingsStore {
             .await
             .context("Failed to persist settings")?;
 
-        if let Some(handler) = Self::find_update_handler(key) {
+        if old != Null
+            && let Some(handler) = Self::find_update_handler(key)
+        {
             handler(value.clone(), old)?;
         }
 
@@ -159,7 +162,7 @@ impl SettingsStore {
 
         if let Err(e) = self.get_value::<T>() {
             warn!(
-                "Settings '{key}' data is corrupted or mismatched and will resetting to default: {e:?}"
+                "Settings '{key}' data is corrupted or missing and will resetting to default: {e:?}"
             );
             self.set(T::default()).await?;
         }
@@ -171,7 +174,10 @@ impl SettingsStore {
         let _guard = self.write_lock.lock().await;
         let json = serde_json::to_string_pretty(&*self.values.read())?;
         self.persistence.save(json).await?;
-        info!("Settings saved to {}", self.persistence.source_description());
+        info!(
+            "Settings saved to {}",
+            self.persistence.source_description()
+        );
         Ok(())
     }
 

@@ -49,14 +49,16 @@ impl SettingsArgs {
             .as_ref()
             .ok_or_else(|| syn::Error::new_spanned(&item.ident, "Missing 'name'"))?;
 
-        let derives = self.generate_derives();
         let ide_helper = self.generate_ide_helper(&item.ident, name_lit, *name_span);
+        let derives = self.generate_derives();
+        let properties = self.generate_properties();
         let trait_impl = self.generate_trait_impl(item, name_lit)?;
         let inventory = self.generate_inventory_submit(&item.ident, name_lit);
 
         Ok(quote! {
             #ide_helper
             #derives
+            #properties
             #item
             #trait_impl
             #inventory
@@ -79,6 +81,12 @@ impl SettingsArgs {
 
         quote! {
             #[derive(#(#traits),*)]
+        }
+    }
+
+    fn generate_properties(&self) -> proc_macro2::TokenStream {
+        quote! {
+            #[serde(rename_all = "camelCase")]
         }
     }
 

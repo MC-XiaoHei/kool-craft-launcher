@@ -8,11 +8,16 @@ use tauri::Manager;
 use crate::settings::components::Password;
 
 #[settings(name = "theme", post_process = post_process, update_handler = on_update)]
-#[serde(rename_all = "camelCase")]
 pub struct ThemeSettings {
     pub effect: ThemeEffect,
     pub mode: ThemeMode,
     pub test: Password,
+    pub test_group: TestGroup,
+}
+
+#[settings_type]
+pub struct TestGroup {
+    pub password: Password,
 }
 
 fn post_process(settings: &mut ThemeSettings) -> Result<()> {
@@ -30,7 +35,7 @@ fn on_update(neo: &ThemeSettings, _old: ThemeSettings) -> Result<()> {
 }
 
 #[settings_type]
-#[derive(Default, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum ThemeEffect {
     #[default]
     Auto,
@@ -40,7 +45,7 @@ pub enum ThemeEffect {
 }
 
 #[settings_type]
-#[derive(Default, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum ThemeMode {
     #[default]
     Auto,

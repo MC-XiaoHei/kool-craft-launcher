@@ -33,6 +33,7 @@ mod tests {
             effect: ThemeEffect::Vibrancy,
             mode: ThemeMode::Dark,
             test: Default::default(),
+            test_group: Default::default(),
         };
 
         macos_settings_should_be_sanitize.sanitize(&os_info);
@@ -49,6 +50,7 @@ mod tests {
             effect: ThemeEffect::Mica,
             mode: ThemeMode::Dark,
             test: Default::default(),
+            test_group: Default::default(),
         };
 
         windows_settings_should_be_sanitize.sanitize(&os_info);
@@ -65,6 +67,7 @@ mod tests {
             effect: ThemeEffect::Auto,
             mode: ThemeMode::Light,
             test: Default::default(),
+            test_group: Default::default(),
         };
 
         settings_should_not_be_sanitize.sanitize(&os_info);
