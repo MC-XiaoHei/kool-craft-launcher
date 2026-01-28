@@ -5,51 +5,38 @@ use futures::stream;
 use std::collections::HashSet;
 use std::env;
 use std::path::PathBuf;
+use tap::Pipe;
 use tokio::fs::read_dir;
 
+const INSPECT_JAVA_CONCURRENCY: usize = 16;
+
 pub async fn scan_all() -> Vec<JavaInstance> {
-    let candidates = find_candidate_paths().await;
-    validate(candidates).await
+    candidate_paths().await
+        .pipe(stream::iter)
+        .map(to_java_executable)
+        .buffer_unordered(INSPECT_JAVA_CONCURRENCY)
+        .filter_map(|opt| async { opt })
+        .collect()
+        .await
 }
 
-async fn find_candidate_paths() -> HashSet<PathBuf> {
-    let mut candidates = HashSet::new();
-
-    candidates.extend(scan_java_home().await);
-    candidates.extend(scan_path_environment().await);
-    candidates.extend(scan_current_directory().await);
-
-    candidates
+async fn candidate_paths() -> Vec<PathBuf> {
+    [
+        scan_java_home().await,
+        scan_path_environment().await,
+        scan_current_directory().await,
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
-async fn validate(paths: HashSet<PathBuf>) -> Vec<JavaInstance> {
-    let mut tasks = Vec::new();
-
-    let paths = stream::iter(paths)
-        .filter(|path| is_executable(path.clone()))
-        .collect::<Vec<PathBuf>>()
-        .await;
-
-    for path in paths {
-        tasks.push(tokio::spawn(async move {
-            if is_executable(path.clone()).await {
-                inspect_java_executable(path).await
-            } else {
-                None
-            }
-        }));
+async fn to_java_executable(path: PathBuf) -> Option<JavaInstance> {
+    if is_executable(path.clone()).await {
+        inspect_java_executable(path).await
+    } else {
+        None
     }
-
-    let mut valid_installations = Vec::new();
-    let results = futures::future::join_all(tasks).await;
-
-    for result in results {
-        if let Ok(Some(java_install)) = result {
-            valid_installations.push(java_install);
-        }
-    }
-
-    valid_installations
 }
 
 async fn scan_java_home() -> Vec<PathBuf> {

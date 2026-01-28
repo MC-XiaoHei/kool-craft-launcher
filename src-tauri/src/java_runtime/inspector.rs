@@ -13,6 +13,21 @@ use tokio::time::timeout;
 const JAVA_VERSION_DETECT_TIMEOUT: Duration = Duration::from_secs(3);
 
 pub async fn inspect_java_executable(path: PathBuf) -> Option<JavaInstance> {
+    let output = match execute_java_version_command(path.clone()).await {
+        Ok(out) => out,
+        Err(_) => return None,
+    };
+
+    match parse_java_info(path.clone(), output) {
+        Ok(instance) => Some(instance),
+        Err(err) => {
+            warn!("error while detecting java in {path:?}: {err:?}");
+            None
+        }
+    }
+}
+
+async fn execute_java_version_command(path: PathBuf) -> Result<String> {
     let exec = Executable {
         program: path.to_string_lossy().to_string(),
         args: vec!["-version".to_string()],
@@ -22,48 +37,58 @@ pub async fn inspect_java_executable(path: PathBuf) -> Option<JavaInstance> {
 
     let result = timeout(JAVA_VERSION_DETECT_TIMEOUT, exec.run_and_get_output()).await;
 
-    let Ok(Ok(output)) = result else { return None };
-
-    let parse_result = parse_output(path.clone(), output);
-    match parse_result {
-        Ok(instance) => Some(instance),
-        Err(err) => {
-            warn!("error while detecting java in {path:?}: {err:?}");
-            None
-        }
+    match result {
+        Ok(Ok(output)) => Ok(output),
+        Ok(Err(e)) => Err(e),
+        Err(_) => Err(anyhow!("Command timed out")),
     }
 }
 
-fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
+fn parse_java_info(path: PathBuf, output: String) -> Result<JavaInstance> {
+
+    let version_str = extract_raw_version(output.clone())?;
+    let major_version = parse_major_version(version_str.clone())?;
+    let arch = determine_architecture(output.clone());
+    let vendor_name = extract_and_detect_vendor(output.clone());
+
+    Ok(JavaInstance {
+        path,
+        version: version_str,
+        major_version,
+        arch,
+        vendor_name,
+    })
+}
+
+fn extract_raw_version(output: String) -> Result<String> {
     static RE: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r#"version "([^"]+)""#)
-            .expect("Internal Error: Failed to compile java_version_detect regex") // this should never happen
+            .expect("Internal Error: Failed to compile java_version_detect regex")
     });
 
-    let version_str = RE
-        .captures(&output)
+    RE.captures(output.as_str())
         .and_then(|c| c.get(1))
         .map(|m| m.as_str().to_string())
-        .context("No version string found in output")?;
+        .context("No version string found in output")
+}
 
-    let major_version = if version_str.starts_with("1.") {
-        version_str
-            .split('.')
-            .nth(1)
-            .unwrap_or("0")
-            .parse()
-            .map_err(|_| anyhow!("Invalid major version: {version_str}"))?
+fn parse_major_version(version_str: String) -> Result<u32> {
+    let segment = if version_str.starts_with("1.") {
+        version_str.split('.').nth(1)
     } else {
-        version_str
-            .split('.')
-            .next()
-            .unwrap_or("0")
-            .parse()
-            .map_err(|_| anyhow!("Invalid major version: {version_str}"))?
+        version_str.split('.').next()
     };
 
+    segment
+        .unwrap_or("0")
+        .parse()
+        .map_err(|_| anyhow!("Invalid major version: {version_str}"))
+}
+
+fn determine_architecture(output: String) -> JavaArch {
     let out_lower = output.to_lowercase();
-    let arch = if out_lower.contains("aarch64") || out_lower.contains("arm64") {
+
+    if out_lower.contains("aarch64") || out_lower.contains("arm64") {
         JavaArch::Arm64
     } else if out_lower.contains("64-bit")
         || out_lower.contains("x86_64")
@@ -72,30 +97,24 @@ fn parse_output(path: PathBuf, output: String) -> Result<JavaInstance> {
         JavaArch::X64
     } else {
         JavaArch::X86
-    };
+    }
+}
 
-    let vendor_name = output
+fn extract_and_detect_vendor(output: String) -> String {
+    let raw_vendor_line = output
         .lines()
         .nth(1)
         .unwrap_or_else(|| output.lines().next().unwrap_or("Unknown"))
-        .trim()
-        .to_string()
-        .pipe(detect_vendor);
+        .trim();
 
-    Ok(JavaInstance {
-        path: path.to_path_buf(),
-        version: version_str,
-        major_version,
-        arch,
-        vendor_name,
-    })
+    detect_vendor(raw_vendor_line.to_string())
 }
 
-fn detect_vendor(raw: impl Into<String>) -> String {
-    let raw = raw.into();
+fn detect_vendor(raw: String) -> String {
+    let raw_lower = raw.to_lowercase();
 
     for (k, v) in VENDOR_KEYWORDS_MAP {
-        if raw.to_lowercase().contains(k) {
+        if raw_lower.contains(k) {
             return v.to_string();
         }
     }
@@ -126,7 +145,7 @@ Java(TM) SE Runtime Environment (build 1.7.0_80-b15)
 Java HotSpot(TM) Client VM (build 24.80-b15, mixed mode)"#;
 
     fn parse(output: &str) -> Result<JavaInstance> {
-        parse_output(PathBuf::from("/mock/java"), output.to_string())
+        parse_java_info(PathBuf::from("/mock/java"), output.to_string())
     }
 
     #[test]
