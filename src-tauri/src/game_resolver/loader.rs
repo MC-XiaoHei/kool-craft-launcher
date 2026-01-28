@@ -23,9 +23,8 @@ impl FileSystemVersionLoader {
     fn resolve_json_path(
         &self,
         minecraft_folder: AbsPathBuf,
-        version_id: impl Into<String>,
+        version_id: String,
     ) -> AbsPathBuf {
-        let version_id = version_id.into();
         minecraft_folder
             .join(VERSIONS_DIR_NAME)
             .join(version_id.clone())
@@ -57,7 +56,7 @@ impl FileSystemVersionLoader {
     async fn load_manifest(
         &self,
         root_dir: AbsPathBuf,
-        version_id: impl Into<String>,
+        version_id: String,
     ) -> Result<VersionManifest> {
         let json_path = self.resolve_json_path(root_dir, version_id);
         let content = fs::read_to_string(&json_path).await?;
@@ -80,7 +79,7 @@ mod tests {
         let root_path = temp_dir.path().to_path_buf().try_into().unwrap();
         let loader = FileSystemVersionLoader;
 
-        let result = loader.load_manifest(root_path, "non-existent").await;
+        let result = loader.load_manifest(root_path, "non-existent".to_string()).await;
 
         assert!(
             result.is_err(),
@@ -106,7 +105,7 @@ mod tests {
             .unwrap();
         file.flush().await.unwrap();
 
-        let result = loader.load_manifest(root_path, "bad_json").await;
+        let result = loader.load_manifest(root_path, "bad_json".to_string()).await;
 
         assert!(
             result.is_err(),

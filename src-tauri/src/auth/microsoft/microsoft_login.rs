@@ -125,10 +125,8 @@ struct OAuthTokenResponse {
 
 async fn get_microsoft_token_by_code(
     client: Client,
-    code: impl Into<String>,
+    code: String,
 ) -> Result<MicrosoftToken> {
-    let code = code.into();
-
     let params = [
         ("client_id", CLIENT_ID),
         ("code", code.as_str()),

@@ -15,14 +15,14 @@ impl<'a> TaskStatusUpdater<'a> {
         ctx: &'a Context,
         id: Uuid,
         weight: u64,
-        name: impl Into<String>,
+        name: String,
         hidden_in_view: bool,
     ) -> Self {
         Self {
             ctx,
             id,
             weight,
-            name: name.into(),
+            name,
             hidden_in_view,
         }
     }
