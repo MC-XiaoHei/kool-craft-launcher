@@ -1,5 +1,5 @@
 import { computed, watchEffect } from "vue"
-import { settings } from "@/services/settings"
+import { settings } from "@/services/settings/value"
 import { usePreferredDark } from "@vueuse/core"
 
 const systemDark = usePreferredDark()

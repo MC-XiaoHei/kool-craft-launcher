@@ -1,7 +1,18 @@
+<script setup lang="ts">
+  import { wallpaperUrl } from "@/services/wallpaper"
+  import { computed } from "vue"
+  import { settings } from "@/services/settings/value"
+
+  const opacity = computed(() => {
+    const isWallpaperMode = settings.value.theme.effect == "Wallpaper"
+    return isWallpaperMode ? 1 : 0
+  })
+</script>
+
 <template>
   <div
-    class="absolute inset-0 -z-10 pointer-events-none overflow-hidden transition-opacity duration-200 bg-gray-500"
-    :style="{ opacity: overlayOpacity }"
+    class="absolute inset-0 -z-10 pointer-events-none overflow-hidden bg-gray-500"
+    :style="{ opacity: opacity }"
   >
     <div
       class="absolute inset-0 bg-cover bg-center transform scale-125 blur-[125px] saturate-[2.1] will-change-transform"
@@ -15,14 +26,6 @@
     ></div>
   </div>
 </template>
-
-<script setup lang="ts">
-  import { wallpaperUrl } from "@/services/wallpaper"
-
-  defineProps<{
-    overlayOpacity: number
-  }>()
-</script>
 
 <style scoped>
   .bg-noise {

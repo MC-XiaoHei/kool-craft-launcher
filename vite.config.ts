@@ -3,6 +3,7 @@ import vue from "@vitejs/plugin-vue"
 import tailwindcss from "@tailwindcss/vite"
 import tsconfigPaths from "vite-tsconfig-paths"
 import vueRouter from "unplugin-vue-router/vite"
+import { nodePolyfills } from "vite-plugin-node-polyfills"
 import { resolve } from "path"
 
 const host = process.env.TAURI_DEV_HOST
@@ -18,6 +19,11 @@ export default defineConfig(async () => ({
     vue(),
     tailwindcss(),
     tsconfigPaths(),
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+      },
+    }),
   ],
 
   resolve: {

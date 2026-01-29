@@ -35,7 +35,8 @@ fn create_settings_store() -> Result<Arc<SettingsStore>> {
 
 async fn init_settings_store(store: Arc<SettingsStore>) -> Result<()> {
     store.load().await?;
-    register_settings_modules(store).await?;
+    register_settings_modules(store.clone()).await?;
+    store.save().await?;
     Ok(())
 }
 

@@ -96,7 +96,7 @@ impl SettingsStore {
             .insert(key.to_string(), value.clone())
             .unwrap_or_default();
 
-        self.save_settings()
+        self.save()
             .await
             .context("Failed to persist settings")?;
 
@@ -160,17 +160,23 @@ impl SettingsStore {
     async fn validate_or_default<T: SettingsGroup>(&self) -> Result<()> {
         let key = T::KEY;
 
-        if let Err(e) = self.get_value::<T>() {
-            warn!(
-                "Settings '{key}' data is corrupted or missing and will resetting to default: {e:?}"
-            );
-            self.set(T::default()).await?;
+        let refined_value = self.get_value::<T>()
+            .unwrap_or_else(|e| {
+                warn!("Settings '{key}' is corrupted or missing, resetting to default: {e:?}");
+                T::default()
+            })
+            .pipe(|s| serde_json::to_value(s))?;
+
+        let values = self.values.upgradable_read();
+        if values.get(key) != Some(&refined_value) {
+            let mut values = RwLockUpgradableReadGuard::upgrade(values);
+            values.insert(key.to_string(), refined_value);
         }
 
         Ok(())
     }
 
-    async fn save_settings(&self) -> Result<()> {
+    pub async fn save(&self) -> Result<()> {
         let _guard = self.write_lock.lock().await;
         let json = serde_json::to_string_pretty(&*self.values.read())?;
         self.persistence.save(json).await?;

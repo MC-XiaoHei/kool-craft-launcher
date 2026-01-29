@@ -28,6 +28,7 @@
     "postversion": "pnpm sync-metadata"
   },
   "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^15.2.2",
     "@phosphor-icons/vue": "^2.2.1",
     "@tailwindcss/vite": "^4.1.18",
     "@tauri-apps/api": "^2",
@@ -35,6 +36,7 @@
     "@tauri-apps/plugin-log": "~2",
     "@tauri-apps/plugin-opener": "^2",
     "@vueuse/core": "^14.1.0",
+    "ajv": "^8.17.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "colord": "^2.9.3",
@@ -47,6 +49,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "prettier": "^3.6.2",
@@ -54,6 +57,7 @@
     "typescript": "~5.6.2",
     "unplugin-vue-router": "^0.19.2",
     "vite": "^6.0.3",
+    "vite-plugin-node-polyfills": "^0.25.0",
     "vite-tsconfig-paths": "^6.0.4",
     "vue-tsc": "^2.1.10"
   }

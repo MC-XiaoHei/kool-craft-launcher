@@ -2,15 +2,15 @@ import { Colord, colord, extend } from "colord"
 import mixPlugin from "colord/plugins/mix"
 import namesPlugin from "colord/plugins/names"
 import harmoniesPlugin from "colord/plugins/harmonies"
-import { ref, watch } from "vue"
+import { watch } from "vue"
+import { settings } from "@/services/settings/value"
 
 extend([mixPlugin, namesPlugin, harmoniesPlugin])
-export const primaryHex = ref("#01ca8a") // TODO: move into settings
 
 export function initTheme() {
-  updateTheme(primaryHex.value)
+  updateTheme(settings.value.theme.primaryHex)
   watch(
-    () => primaryHex.value,
+    () => settings.value.theme.primaryHex,
     val => updateTheme(val),
   )
 }

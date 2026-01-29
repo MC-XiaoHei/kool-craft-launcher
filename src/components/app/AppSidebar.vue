@@ -10,7 +10,7 @@
   const navItems = [
     { icon: PhHouse, label: "主页", path: "/" },
     { icon: PhSquaresFour, label: "实例库", path: "/library" },
-    { icon: PhShoppingBag, label: "资源", path: "/resource" },
+    { icon: PhShoppingBag, label: "资源", path: "/resources" },
   ]
 
   const isActive = (path: string) => route?.path === path

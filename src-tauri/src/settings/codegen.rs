@@ -55,7 +55,7 @@ pub fn generate_settings_watcher() -> String {
             setSettings,
             resumeWatchSettingsStore,
             isWatchingSettingsStore
-        }} from "@/services/settings"
+        }} from "@/services/settings/value"
 
         export function watchSettingsStore() {{
         {elements}

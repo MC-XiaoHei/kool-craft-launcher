@@ -1,8 +1,17 @@
 import { getWallpaperDataUrl } from "@/bindings/commands"
 import { ref } from "vue"
+import { settings } from "@/services/settings/value"
 
 const cacheKey = "wallpaper_cache"
 export const wallpaperUrl = ref(getCachedWallpaper())
+
+export async function scheduleLoadWallpaperAsNeeded(): Promise<void> {
+  if (settings.value.theme.effect === "Wallpaper") {
+    await loadWallpaper()
+  } else {
+    loadWallpaper().then()
+  }
+}
 
 export async function loadWallpaper() {
   if (wallpaperUrl.value) return

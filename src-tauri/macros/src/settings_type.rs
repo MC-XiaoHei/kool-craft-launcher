@@ -10,7 +10,10 @@ pub fn settings_type_impl(_args: TokenStream, input: TokenStream) -> TokenStream
     let is_struct = matches!(input_item, Item::Struct(_));
 
     let serde_attribute = if is_struct {
-        quote! { #[serde(rename_all = "camelCase")] }
+        quote! {
+            #[serde(rename_all = "camelCase")]
+            #[serde(default)]
+        }
     } else {
         quote! {}
     };

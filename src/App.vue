@@ -2,18 +2,14 @@
   import { onMounted, ref } from "vue"
   import { getCurrentWindow } from "@tauri-apps/api/window"
   import { useRouter } from "vue-router"
-  import { loadWallpaper } from "@/services/wallpaper"
-  import { ThemeEffect } from "@/bindings/types"
-  import { settings } from "@/services/settings"
+  import { scheduleLoadWallpaperAsNeeded } from "@/services/wallpaper"
   import AppBackground from "@/components/app/AppBackground.vue"
   import WindowControls from "@/components/app/WindowControls.vue"
   import AppSidebar from "@/components/app/AppSidebar.vue"
   import { listenToSystemThemeChanges } from "@/services/dark"
   import { initTheme } from "@/services/theme"
-  import { getSettingsSchemas } from "@/bindings/commands"
 
   const appWindow = getCurrentWindow()
-  const overlayOpacity = ref(1)
 
   const router = useRouter()
   const transitionName = ref("")
@@ -31,32 +27,17 @@
   onMounted(async () => {
     initTheme()
     listenToSystemThemeChanges()
-    await applyEffect(settings.value.theme.effect, true)
+    await scheduleLoadWallpaperAsNeeded()
     await appWindow.show()
     await appWindow.setFocus()
-    console.log(JSON.stringify(await getSettingsSchemas()))
   })
-
-  async function applyEffect(target: ThemeEffect, force = false) {
-    if (!force && settings.value.theme.effect === target) return
-    if (target === "Wallpaper") {
-      await loadWallpaper()
-      overlayOpacity.value = 1
-      await new Promise(r => setTimeout(r, 200))
-      settings.value.theme.effect = target
-    } else {
-      settings.value.theme.effect = target
-      overlayOpacity.value = 0
-      loadWallpaper().then()
-    }
-  }
 </script>
 
 <template>
   <div
-    class="relative w-screen h-screen overflow-hidden text-[#202020] transition-colors duration-200 font-sans select-none dark:text-white"
+    class="relative w-screen h-screen overflow-hidden text-[#202020] font-sans select-none dark:text-white"
   >
-    <AppBackground :overlay-opacity="overlayOpacity" />
+    <AppBackground />
     <WindowControls />
 
     <div class="relative z-10 p-2 pl-0 size-full flex" data-tauri-drag-region>

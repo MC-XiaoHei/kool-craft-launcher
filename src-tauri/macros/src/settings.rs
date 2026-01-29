@@ -87,6 +87,7 @@ impl SettingsArgs {
     fn generate_properties(&self) -> proc_macro2::TokenStream {
         quote! {
             #[serde(rename_all = "camelCase")]
+            #[serde(default)]
         }
     }
 
