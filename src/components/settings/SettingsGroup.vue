@@ -9,8 +9,8 @@
 </script>
 
 <template>
-  <div class="schema-group border p-4 rounded-lg mb-4">
-    <h3 v-if="schema.title" class="text-lg font-bold mb-4 border-b pb-2">
+  <div class="rounded-lg mb-4">
+    <h3 v-if="schema.title" class="text-lg font-bold mb-4 pb-2">
       {{ schema.title }}
     </h3>
 
