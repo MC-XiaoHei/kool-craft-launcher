@@ -12,6 +12,7 @@ base64 = "0.22"
 chrono = "0.4"
 dashmap = "6.1"
 dirs = "6.0"
+fluent-templates = "0.13"
 futures = "0.3"
 heck = "0.5"
 indoc = "2.0"
@@ -33,6 +34,7 @@ tempfile = "3"
 thiserror = "2.0"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["rt"] }
+unic-langid = "0.9"
 url = "2.5"
 uuid = { version = "1", features = ["v4", "serde"] }
 
@@ -58,10 +60,10 @@ name = "codegen"
 path = "src/codegen.rs"
 
 [build-dependencies]
-walkdir = "2"
-syn = { version = "2", features = ["full", "extra-traits"] }
-heck = "0.5"
-anyhow = "1"
+anyhow = "1.0"
+fluent-syntax = "0.12"
+indoc = "2.0"
+tap = "1.0"
 tauri-build = { version = "2.5", features = [] }
 
 [lints.rust]
