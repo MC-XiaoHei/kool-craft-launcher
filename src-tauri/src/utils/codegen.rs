@@ -1,61 +1,70 @@
+use crate::i18n::codegen::generate_i18n_keys_def;
+use crate::ipc::command::generate_command_invokers;
+use crate::ipc::event::generate_event_functions;
 use crate::settings::codegen::{generate_settings_type_def, generate_settings_watcher};
-use crate::utils::codegen::unwrap_safe::{
-    gen_command_invokers, gen_settings_watcher, gen_event_functions, gen_types,
-};
+use anyhow::{Context, Result};
 use specta::datatype::{FunctionResultVariant, PrimitiveType};
 use specta::{DataType, TypeCollection};
 use specta_typescript::{Typescript, datatype};
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::sync::OnceLock;
 
-#[cfg(debug_assertions)]
-pub fn do_codegen() {
+pub fn do_codegen() -> Result<()> {
+    clear_bindings_dir()?;
+
     let mut types = specta::export();
-    gen_types(&types);
-    gen_settings_watcher();
-    gen_command_invokers(&mut types);
-    gen_event_functions(&types);
+    gen_types(&types)?;
+    gen_settings_watcher()?;
+    gen_command_invokers(&mut types)?;
+    gen_event_functions(&types)?;
+
+    Ok(())
 }
 
-// SAFETY:
-// Build Scope: This mod is guarded by #[cfg(debug_assertions)], so .unwrap() is completely stripped from release builds and poses no risk to production.
-#[cfg(debug_assertions)]
-mod unwrap_safe {
-    use super::*;
-    use crate::ipc::command::generate_command_invokers;
-    use crate::ipc::event::generate_event_functions;
-    use specta::TypeCollection;
-    use std::sync::OnceLock;
-
-    pub(super) fn gen_types(types: &TypeCollection) {
-        let path = "../src/bindings/types.ts";
-
-        Typescript::default().export_to(path, types).unwrap();
-
-        let mut file = OpenOptions::new().append(true).open(path).unwrap();
-
-        writeln!(file).unwrap();
-        writeln!(file, "{}", generate_settings_type_def()).unwrap();
+fn clear_bindings_dir() -> Result<()> {
+    const PATH: &str = "../src/bindings";
+    if fs::exists(PATH)? {
+        if fs::metadata(PATH)?.is_dir() {
+            fs::remove_dir_all(PATH)?;
+        } else {
+            fs::remove_file(PATH)?;
+        }
     }
+    fs::create_dir(PATH)?;
+    Ok(())
+}
 
-    pub(super) fn gen_settings_watcher() {
-        let path = "../src/bindings/settings.ts";
-        let content = generate_settings_watcher();
-        fs::write(path, content).unwrap();
-    }
+fn gen_types(types: &TypeCollection) -> Result<()> {
+    const PATH: &str = "../src/bindings/types.ts";
 
-    pub(super) fn gen_command_invokers(types: &mut TypeCollection) {
-        let path = "../src/bindings/commands.ts";
-        let content = generate_command_invokers(types);
-        fs::write(path, content).unwrap();
-    }
+    Typescript::default().export_to(PATH, types)?;
 
-    pub(super) fn gen_event_functions(types: &TypeCollection) {
-        let path = "../src/bindings/events.ts";
-        let content = generate_event_functions(types);
-        fs::write(path, content).unwrap();
-    }
+    let mut file = OpenOptions::new().append(true).open(PATH)?;
+
+    writeln!(file, "{}\n", generate_settings_type_def())?;
+    writeln!(file, "{}\n", generate_i18n_keys_def()?)?;
+
+    Ok(())
+}
+
+fn gen_settings_watcher() -> Result<()> {
+    const PATH: &str = "../src/bindings/settings.ts";
+    let content = generate_settings_watcher();
+    fs::write(PATH, content).context("Failed to write settings to file")
+}
+
+fn gen_command_invokers(types: &mut TypeCollection) -> Result<()> {
+    const PATH: &str = "../src/bindings/commands.ts";
+    let content = generate_command_invokers(types);
+    fs::write(PATH, content).context("Failed to write commands to file")
+}
+
+fn gen_event_functions(types: &TypeCollection) -> Result<()> {
+    const PATH: &str = "../src/bindings/events.ts";
+    let content = generate_event_functions(types);
+    fs::write(PATH, content).context("Failed to write events to file")
 }
 
 pub fn indent_all(text: impl Into<String>, space_of_num: usize) -> String {

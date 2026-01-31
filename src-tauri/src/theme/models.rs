@@ -11,7 +11,7 @@ impl ThemeEffect {
             warn!("Vibrancy effect is not supported on Windows. Fallback to Auto.");
         }
 
-        if is_macos(&os_info) && *self == ThemeEffect::Mica {
+        if is_macos(os_info) && *self == ThemeEffect::Mica {
             *self = ThemeEffect::Auto;
             warn!("Mica effect is not supported on macOS. Fallback to Auto.");
         }

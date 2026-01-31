@@ -1,48 +1,31 @@
-use std::path::Path;
 use anyhow::{Context, Result};
-use std::{env, fs};
-use std::path::PathBuf;
-use ast::Entry::Message;
-use fluent_syntax::{ast, parser};
+use i18n_parser::{get_translate_keys, resolve_all_ftl_files};
 use indoc::formatdoc;
+use std::path::Path;
+use std::path::PathBuf;
+use std::{env, fs};
 use tauri_build::Attributes;
 
 fn main() -> Result<()> {
-    generate_translate_keys()?;
+    generate_translate_keys_def()?;
     build()?;
     Ok(())
 }
 
-fn generate_translate_keys() -> Result<()> {
-    let source_path = resolve_master_ftl_file()?;
-    add_to_rerun_track_list(source_path.clone());
-    let file_content = read_file_content(source_path.clone())?;
-    let ast = parse_fluent_ast(file_content)?;
-    let message_ids = extract_message_ids(ast);
+fn generate_translate_keys_def() -> Result<()> {
+    add_ftl_files_to_rerun_track_list()?;
+    let message_ids = get_translate_keys()?;
     let rust_code = generate_rust_code(message_ids);
     write_to_output_dir("generated_i18n_keys.rs", rust_code)?;
     Ok(())
 }
 
-fn resolve_master_ftl_file() -> Result<PathBuf> {
-    const MASTER_FTL_FILE: &str = "../locales/en-US/main.ftl";
-    Ok(current_dir()?.join(MASTER_FTL_FILE))
-}
+fn add_ftl_files_to_rerun_track_list() -> Result<()> {
+    resolve_all_ftl_files()?
+        .into_iter()
+        .for_each(add_to_rerun_track_list);
 
-fn parse_fluent_ast(content: String) -> Result<ast::Resource<String>> {
-    parser::parse(content)
-        .map_err(|(res, _err)| anyhow::anyhow!("Failed to parse FTL syntax: {:?}", res))
-}
-
-fn extract_message_ids(resource: ast::Resource<String>) -> Vec<String> {
-    resource
-        .body
-        .iter()
-        .filter_map(|entry| match entry {
-            Message(msg) => Some(msg.id.name.to_string()),
-            _ => None,
-        })
-        .collect()
+    Ok(())
 }
 
 fn generate_rust_code(keys: Vec<String>) -> String {
@@ -65,8 +48,8 @@ fn generate_rust_code(keys: Vec<String>) -> String {
 fn format_as_rust_constant(key: String) -> String {
     let const_name = key.to_uppercase().replace("-", "_");
     format!(
-        "    /// Key: `{}`\n    pub const {}: &str = \"{}\";",
-        key, const_name, key
+        "    pub const {}: &str = \"{}\";",
+        const_name, key
     )
 }
 
@@ -118,18 +101,11 @@ fn add_to_rerun_track_list(file: PathBuf) {
 
 fn embed_manifest_file(manifest: PathBuf) {
     println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
-    println!(
-        "cargo:rustc-link-arg=/MANIFESTINPUT:{}",
-        manifest.display()
-    );
+    println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
 }
 
 fn current_dir() -> Result<PathBuf> {
     env::current_dir().context("Couldn't get current directory")
-}
-
-fn read_file_content(path: PathBuf) -> Result<String> {
-    fs::read_to_string(path.clone()).context(format!("Couldn't read file {}", path.display()))
 }
 
 fn turn_linker_warns_to_errs() {

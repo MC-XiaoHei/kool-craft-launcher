@@ -2,7 +2,6 @@ import { ref } from "vue"
 import type { JSONSchema7 } from "json-schema"
 import { getSettingsSchemas as invokeGetSettingsSchemas } from "@/bindings/commands"
 import $RefParser from "@apidevtools/json-schema-ref-parser"
-import { warn } from "@tauri-apps/plugin-log"
 
 export const settingsSchema = ref(await getSettingsSchemas())
 
@@ -21,7 +20,7 @@ async function getSettingsSchemas(): Promise<SettingsSchema> {
       try {
         processedMap[key] = (await $RefParser.dereference(schemaContent)) as SettingsGroupSchema
       } catch (err) {
-        await warn(`Fail to parse settings group [${key}]: ${err}]`)
+        console.warn(`Fail to parse settings group [${key}]: ${err}]`)
       }
     }
   }

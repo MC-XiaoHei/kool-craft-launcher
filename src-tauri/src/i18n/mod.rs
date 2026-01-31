@@ -1,3 +1,5 @@
+pub mod codegen;
+
 use fluent_templates::static_loader;
 use tap::Pipe;
 

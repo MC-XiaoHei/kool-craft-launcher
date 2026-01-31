@@ -48,8 +48,9 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png"]
 window-vibrancy = "0.7.1"
 wallpaper = "3.2"
 
-# macros
-macros = { path = "./macros" }
+# sub-crates
+macros = { path = "crates/macros" }
+i18n-parser = { path = "crates/i18n-parser" }
 
 [lib]
 name = "kool_craft_launcher_lib"
@@ -61,7 +62,7 @@ path = "src/codegen.rs"
 
 [build-dependencies]
 anyhow = "1.0"
-fluent-syntax = "0.12"
+i18n-parser = { path = "crates/i18n-parser" }
 indoc = "2.0"
 tap = "1.0"
 tauri-build = { version = "2.5", features = [] }

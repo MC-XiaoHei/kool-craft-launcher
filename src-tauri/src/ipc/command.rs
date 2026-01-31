@@ -1,4 +1,4 @@
-use crate::utils::codegen::{get_import_line, get_import_list, resolve_ts_type};
+use crate::utils::codegen::{get_import_line, resolve_ts_type};
 use heck::ToLowerCamelCase;
 use indoc::formatdoc;
 use macros::inventory;

@@ -1782,6 +1782,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "i18n-parser"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "fluent-syntax",
+ "walkdir",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2153,10 +2162,10 @@ dependencies = [
  "chrono",
  "dashmap",
  "dirs 6.0.0",
- "fluent-syntax",
  "fluent-templates",
  "futures",
  "heck 0.5.0",
+ "i18n-parser",
  "image",
  "indoc",
  "inventory",

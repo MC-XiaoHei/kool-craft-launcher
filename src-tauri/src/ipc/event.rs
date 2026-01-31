@@ -1,5 +1,5 @@
 use crate::ipc::command::CommandInfo;
-use crate::utils::codegen::{get_import_line, get_import_list};
+use crate::utils::codegen::get_import_line;
 use indoc::formatdoc;
 use macros::inventory;
 use specta::TypeCollection;

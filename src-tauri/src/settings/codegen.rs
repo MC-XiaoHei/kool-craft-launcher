@@ -22,7 +22,7 @@ impl SettingsGroupInfo {
               () => settings.value.{key},
               async val => {{
                 if (isWatchingSettingsStore()) {{
-                  await setSettings("{key}", val).then().catch(error)
+                  await setSettings("{key}", val).then().catch(console.error)
                 }}
               }},
               {{ deep: true }},
@@ -49,7 +49,6 @@ pub fn generate_settings_watcher() -> String {
         .join("\n");
     formatdoc! { r#"
         import {{ watch }} from "vue"
-        import {{ error }} from "@tauri-apps/plugin-log"
         import {{
             settings,
             setSettings,

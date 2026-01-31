@@ -1,11 +1,11 @@
 import { watchSettingsStore } from "@/bindings/settings"
-import { SettingsModule } from "@/bindings/types"
 import { nextTick, ref } from "vue"
 import {
   getSettingsValuesJson,
   setSettings as invokeSetSettings,
 } from "@/bindings/commands"
 import { listenSettingsUpdateEvent } from "@/bindings/events"
+import { SettingsModule } from "@/bindings/types"
 
 export const settings = ref<SettingsModule>(await getSettings())
 let watchingSettingsStore = false

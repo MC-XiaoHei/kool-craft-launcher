@@ -1,0 +1,9 @@
+[package]
+name = "i18n-parser"
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0"
+fluent-syntax = "0.12"
+walkdir = "2.5"
