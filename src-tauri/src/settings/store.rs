@@ -67,7 +67,6 @@ impl SettingsStore {
             original.post_process();
             Ok(true)
         }).await?;
-        info!("{:?}", self.get::<T>());
         Ok(())
     }
 

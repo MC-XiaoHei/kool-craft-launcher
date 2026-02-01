@@ -14,15 +14,13 @@ pub struct GeneralSettings {
 }
 
 fn post_process(settings: &mut GeneralSettings) -> Result<()> {
-    info!("{settings:?}");
     if settings.lang.is_none() {
         settings.lang = Some(get_system_locale_or_default());
     }
-    info!("{settings:?}");
     Ok(())
 }
 
 fn on_update(neo: &GeneralSettings, _old: GeneralSettings) -> Result<()> {
-    refresh_lang();
+    refresh_lang(neo.clone());
     Ok(())
 }

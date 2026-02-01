@@ -38,8 +38,8 @@ pub fn current_lang() -> LanguageIdentifier {
     global_lang_storage().load().as_ref().clone()
 }
 
-pub fn refresh_lang() -> Result<()> {
-    let lang_id = compute_lang_from_settings();
+pub fn refresh_lang(settings: GeneralSettings) -> Result<()> {
+    let lang_id = compute_lang_from_settings(settings);
     global_lang_storage().store(Arc::new(lang_id));
     Ok(())
 }
@@ -48,14 +48,9 @@ fn global_lang_storage() -> &'static ArcSwap<LanguageIdentifier> {
     GLOBAL_LANG.get_or_init(|| ArcSwap::from_pointee(default_lang()))
 }
 
-fn compute_lang_from_settings() -> LanguageIdentifier {
-    let app = get_global_app_handle();
-    let store = app.state::<Arc<SettingsStore>>();
+fn compute_lang_from_settings(settings: GeneralSettings) -> LanguageIdentifier {
     let system_locale = get_system_locale().unwrap_or_default();
-    let lang = store
-        .get::<GeneralSettings>()
-        .lang
-        .unwrap_or_else(get_system_locale_or_default);
+    let lang = settings.lang.unwrap_or_else(get_system_locale_or_default);
     lang.as_lang_id()
 }
 
