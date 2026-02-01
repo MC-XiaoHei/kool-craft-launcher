@@ -3,7 +3,10 @@ use fluent_syntax::ast::Entry::Message;
 use fluent_syntax::{ast, parser};
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use tap::{Pipe, Tap};
 use walkdir::WalkDir;
+
+pub const DEFAULT_LANG: &str = "en-US";
 
 pub fn get_translate_keys() -> Result<Vec<String>> {
     let source_path = resolve_master_ftl_file()?;
@@ -18,8 +21,8 @@ pub fn resolve_locales_dir() -> Result<PathBuf> {
 }
 
 pub fn resolve_master_ftl_file() -> Result<PathBuf> {
-    const MASTER_FTL_FILE: &str = "./en-US/main.ftl";
-    Ok(resolve_locales_dir()?.join(MASTER_FTL_FILE))
+    let master_ftl_file = format!("./{DEFAULT_LANG}/main.ftl");
+    Ok(resolve_locales_dir()?.join(master_ftl_file))
 }
 
 pub fn resolve_all_ftl_files() -> Result<Vec<PathBuf>> {
@@ -44,6 +47,31 @@ pub fn resolve_all_ftl_files() -> Result<Vec<PathBuf>> {
             }
         })
         .collect()
+}
+
+pub fn get_supported_locales() -> Result<Vec<String>> {
+    let root_dir = resolve_locales_dir()?;
+    if !root_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    fs::read_dir(root_dir)
+        .context("Failed to read locales directory")?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                path.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|s| s.to_string())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .tap_mut(|x| x.sort())
+        .pipe(Ok)
 }
 
 fn is_ftl_file(path: &Path) -> bool {

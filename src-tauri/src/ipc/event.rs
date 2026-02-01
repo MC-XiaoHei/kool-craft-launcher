@@ -14,7 +14,7 @@ pub struct EventInfo {
 pub fn generate_event_functions(types: &TypeCollection) -> String {
     let event_function_defs = get_event_infos()
         .iter()
-        .map(|info| info.to_functions())
+        .map(EventInfo::to_functions)
         .collect::<Vec<_>>()
         .join("\n");
     let type_import_line = get_import_line(types);

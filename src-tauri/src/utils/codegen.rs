@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use crate::i18n::codegen::generate_i18n_keys_def;
 use crate::ipc::command::generate_command_invokers;
 use crate::ipc::event::generate_event_functions;
@@ -67,8 +69,8 @@ fn gen_event_functions(types: &TypeCollection) -> Result<()> {
     fs::write(PATH, content).context("Failed to write events to file")
 }
 
-pub fn indent_all(text: impl Into<String>, space_of_num: usize) -> String {
-    let space = " ".repeat(space_of_num);
+pub fn indent_all(text: impl Into<String>, num_of_space: usize) -> String {
+    let space = " ".repeat(num_of_space);
     text.into()
         .lines()
         .map(|line| format!("{}{}", space, line))

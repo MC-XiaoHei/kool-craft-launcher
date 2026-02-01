@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use i18n_parser::{get_translate_keys, resolve_all_ftl_files};
+use heck::ToPascalCase;
+use i18n_parser::{get_supported_locales, get_translate_keys, resolve_all_ftl_files, DEFAULT_LANG};
 use indoc::formatdoc;
 use std::path::Path;
 use std::path::PathBuf;
@@ -7,16 +8,21 @@ use std::{env, fs};
 use tauri_build::Attributes;
 
 fn main() -> Result<()> {
-    generate_translate_keys_def()?;
+    generate_i18n_codes()?;
     build()?;
     Ok(())
 }
 
-fn generate_translate_keys_def() -> Result<()> {
+fn generate_i18n_codes() -> Result<()> {
     add_ftl_files_to_rerun_track_list()?;
-    let message_ids = get_translate_keys()?;
-    let rust_code = generate_rust_code(message_ids);
-    write_to_output_dir("generated_i18n_keys.rs", rust_code)?;
+    let keys_def = generate_keys_def()?;
+    let locales_def = generate_locales_def()?;
+    let content = formatdoc! { r#"
+        // AUTOMATICALLY GENERATED. DO NOT EDIT.
+        {keys_def}
+        {locales_def}
+    "# };
+    write_to_output_dir("i18n_generated.rs", content)?;
     Ok(())
 }
 
@@ -28,29 +34,58 @@ fn add_ftl_files_to_rerun_track_list() -> Result<()> {
     Ok(())
 }
 
-fn generate_rust_code(keys: Vec<String>) -> String {
-    let constants = keys
+fn generate_keys_def() -> Result<String> {
+    let elements = get_translate_keys()?
         .into_iter()
-        .map(format_as_rust_constant)
+        .map(format_i18n_key_as_enum_element)
         .collect::<Vec<_>>()
         .join("\n");
 
-    formatdoc! { r#"
-        // AUTOMATICALLY GENERATED. DO NOT EDIT.
-
+    Ok(formatdoc! { r#"
         #[allow(dead_code)]
-        pub mod i18n_keys {{
-        {constants}
+        #[derive(strum::IntoStaticStr, strum::EnumIter, Copy, Clone, Debug, Eq, PartialEq)]
+        #[strum(ascii_case_insensitive)]
+        pub enum I18nKeys {{
+        {elements}
         }}
-    "# }
+    "# })
 }
 
-fn format_as_rust_constant(key: String) -> String {
-    let const_name = key.to_uppercase().replace("-", "_");
-    format!(
-        "    pub const {}: &str = \"{}\";",
-        const_name, key
-    )
+fn format_i18n_key_as_enum_element(key: String) -> String {
+    let variant_name = key.to_pascal_case();
+    format!("    #[strum(serialize = \"{key}\")] {variant_name},")
+}
+
+fn generate_locales_def() -> Result<String> {
+    let elements = get_supported_locales()?
+        .into_iter()
+        .map(format_locale_as_enum_element)
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Ok(formatdoc! { r#"
+        use macros::settings_type;
+
+        #[allow(dead_code)]
+        #[derive(strum::IntoStaticStr, strum::EnumIter, strum::EnumString, Copy)]
+        #[settings_type]
+        pub enum Locales {{
+        {elements}
+        }}
+    "# })
+}
+
+fn format_locale_as_enum_element(key: String) -> String {
+    let variant_name = key.to_pascal_case();
+    if is_default_lang(&key) {
+        format!("    #[strum(serialize = \"{key}\")] #[default] {variant_name},")
+    } else {
+        format!("    #[strum(serialize = \"{key}\")] {variant_name},")
+    }
+}
+
+fn is_default_lang(key: &str) -> bool {
+    key == DEFAULT_LANG
 }
 
 fn write_to_output_dir(file_name: &str, content: String) -> Result<()> {

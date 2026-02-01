@@ -7,6 +7,7 @@ default-run = "kool-craft-launcher"
 [dependencies]
 # common dependencies
 anyhow = "1.0"
+arc-swap = "1.7"
 async-trait = "0.1"
 base64 = "0.22"
 chrono = "0.4"
@@ -29,12 +30,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 specta = { version = "2.0.0-rc", features = ["uuid", "chrono", "url", "tokio", "time", "serde", "serde_json", "derive", "export", "function"] }
 specta-typescript = { version = "0.0", features = ["function"] }
+sys-locale = "0.3"
+strum = { version = "0.27", features = ["derive"] }
 tap = "1.0"
 tempfile = "3"
 thiserror = "2.0"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["rt"] }
-unic-langid = "0.9"
 url = "2.5"
 uuid = { version = "1", features = ["v4", "serde"] }
 
@@ -62,6 +64,7 @@ path = "src/codegen.rs"
 
 [build-dependencies]
 anyhow = "1.0"
+heck = "0.5"
 i18n-parser = { path = "crates/i18n-parser" }
 indoc = "2.0"
 tap = "1.0"

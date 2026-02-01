@@ -38,6 +38,7 @@
     "@tauri-apps/plugin-opener": "^2",
     "@vueuse/core": "^14.1.0",
     "ajv": "^8.17.1",
+    "change-case": "^5.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "colord": "^2.9.3",

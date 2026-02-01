@@ -41,7 +41,7 @@ fn sanitize_primary_color(settings: &mut ThemeSettings) {
 }
 
 fn on_update(neo: &ThemeSettings, _old: ThemeSettings) -> Result<()> {
-    get_global_app_handle()?
+    get_global_app_handle()
         .webview_windows()
         .values()
         .for_each(|window| apply_effect(window, neo));

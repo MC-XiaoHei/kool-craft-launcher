@@ -13,7 +13,7 @@ pub fn event_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
 
         impl #struct_name {
             pub fn emit(&self) -> Result<()> {
-                crate::utils::global_app_handle::get_global_app_handle()?.emit(#struct_name_str, self)?;
+                crate::utils::global_app_handle::get_global_app_handle().emit(#struct_name_str, self)?;
                 Ok(())
             }
 
@@ -21,7 +21,7 @@ pub fn event_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
             where
                 T: Into<EventTarget>,
             {
-                crate::utils::global_app_handle::get_global_app_handle()?.emit_to(target, #struct_name_str, self)?;
+                crate::utils::global_app_handle::get_global_app_handle().emit_to(target, #struct_name_str, self)?;
                 Ok(())
             }
 
@@ -29,7 +29,7 @@ pub fn event_impl(_args: TokenStream, input: TokenStream) -> TokenStream {
             where
                 F: Fn(&EventTarget) -> bool,
             {
-                crate::utils::global_app_handle::get_global_app_handle()?.emit_filter(#struct_name_str, self, filter)?;
+                crate::utils::global_app_handle::get_global_app_handle().emit_filter(#struct_name_str, self, filter)?;
                 Ok(())
             }
         }

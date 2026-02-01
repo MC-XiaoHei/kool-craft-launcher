@@ -5,6 +5,7 @@ use log::{info, warn};
 use macros::inventory;
 use parking_lot::{RwLock, RwLockUpgradableReadGuard};
 use schemars::schema_for;
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::Value::Null;
 use serde_json::{Value, json};
@@ -62,7 +63,11 @@ impl SettingsStore {
         self.register_schema::<T>()?;
         self.perform_evolution::<T>().await?;
         self.validate_or_default::<T>().await?;
-        self.get::<T>().post_process()?;
+        self.update_atomic::<T, _>(|original| {
+            original.post_process();
+            Ok(true)
+        }).await?;
+        info!("{:?}", self.get::<T>());
         Ok(())
     }
 
@@ -87,26 +92,65 @@ impl SettingsStore {
         self.update(key.into().as_str(), value).await
     }
 
+    pub async fn update_atomic<T, F>(&self, func: F) -> Result<()>
+    where
+        T: SettingsGroup + Serialize + DeserializeOwned + Default,
+        F: FnOnce(&mut T) -> Result<bool>,
+    {
+        let key = T::KEY;
+        self.mutate_state(key, |json_value| {
+            let mut settings: T = serde_json::from_value(json_value.clone()).unwrap_or_default();
+
+            if func(&mut settings)? {
+                *json_value = serde_json::to_value(settings).context("Settings serialization failed")?;
+                Ok(true)
+            } else {
+                Ok(false)
+            }
+        }).await
+    }
+
     async fn update(&self, key: &str, value: Value) -> Result<()> {
+        self.mutate_state(key, |json_value| {
+            *json_value = value.clone();
+            Ok(true)
+        }).await
+    }
+
+    async fn mutate_state<F>(&self, key: &str, func: F) -> Result<()>
+    where
+        F: FnOnce(&mut Value) -> Result<bool>,
+    {
         self.validate_key_exists(key)?;
 
-        let old = self
-            .values
-            .write()
-            .insert(key.to_string(), value.clone())
-            .unwrap_or_default();
+        let _file_guard = self.write_lock.lock().await;
 
-        self.save()
-            .await
-            .context("Failed to persist settings")?;
+        let mut old_value = Null;
+        let mut new_value = Null;
+        let mut should_save = false;
 
-        if old != Null
-            && let Some(handler) = Self::find_update_handler(key)
         {
-            handler(value.clone(), old)?;
+            let mut values_guard = self.values.write();
+            let mut current_json = values_guard.get(key).cloned().unwrap_or(Null);
+
+            old_value = current_json.clone();
+
+            if func(&mut current_json)? {
+                should_save = true;
+                new_value = current_json;
+                values_guard.insert(key.to_string(), new_value.clone());
+            }
         }
 
-        self.sync_to_frontend(key, value).await?;
+        if should_save {
+            self.save_inner().await.context("Failed to persist settings")?;
+
+            if old_value != Null && let Some(handler) = Self::find_update_handler(key) {
+                handler(new_value.clone(), old_value)?;
+            }
+
+            self.sync_to_frontend(key, new_value).await?;
+        }
 
         Ok(())
     }
@@ -160,7 +204,8 @@ impl SettingsStore {
     async fn validate_or_default<T: SettingsGroup>(&self) -> Result<()> {
         let key = T::KEY;
 
-        let refined_value = self.get_value::<T>()
+        let refined_value = self
+            .get_value::<T>()
             .unwrap_or_else(|e| {
                 warn!("Settings '{key}' is corrupted or missing, resetting to default: {e:?}");
                 T::default()
@@ -178,6 +223,10 @@ impl SettingsStore {
 
     pub async fn save(&self) -> Result<()> {
         let _guard = self.write_lock.lock().await;
+        self.save_inner().await
+    }
+
+    async fn save_inner(&self) -> Result<()> {
         let json = serde_json::to_string_pretty(&*self.values.read())?;
         self.persistence.save(json).await?;
         info!(

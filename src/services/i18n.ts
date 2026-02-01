@@ -1,45 +1,67 @@
 import { FluentBundle, FluentResource } from "@fluent/bundle"
 import { createFluentVue } from "fluent-vue"
+import { settings } from "@/services/settings/value"
+import { watch } from "vue"
+import { Locales } from "@/bindings/types"
+import { pascalCase } from "change-case"
 
 const modules = import.meta.glob("../../locales/*/*.ftl", {
   eager: true,
   query: "?raw",
 })
 
-const bundles: FluentBundle[] = []
+const bundles: Record<Locales, FluentBundle> = Object.entries(modules).reduce(
+  (acc, [path, file]) => {
+    const locale = getLocaleFromPath(path)
+    if (!locale) return acc
 
-function registerLocales() {
-  for (const path in modules) {
-    const locale = parseLocale(path)
-    if (!locale) continue
-    const ftlContent = readFtlContent(path)
-    registerLocale(locale, ftlContent)
-  }
-}
+    const content = (file as any).default
+    const bundle = getLocaleBundle(locale, content)
+    if (!bundle) return acc
 
-function parseLocale(path: string): string | null {
+    const key: Locales = pascalCase(locale) as Locales
+    acc[key] = bundle
+
+    return acc
+  },
+  {} as Record<Locales, FluentBundle>,
+)
+
+function getLocaleFromPath(path: string): string | null {
   const localeMatch = path.match(/locales\/([^/]+)\/.*\.ftl$/)
   return localeMatch ? localeMatch[1] : null
 }
 
-function readFtlContent(path: string) {
-  return (modules[path] as any).default
-}
-
-function registerLocale(locale: string, content: string) {
+function getLocaleBundle(locale: string, content: string): FluentBundle | null {
   const resource = new FluentResource(content)
   const bundle = new FluentBundle(locale)
   const errors = bundle.addResource(resource)
   if (errors.length) {
     console.warn(`Error parsing i18n file for ${locale}: ${errors.toString()}`)
+    return null
   } else {
     console.info(`Loaded locale ${locale}`)
-    bundles.push(bundle)
+    return bundle
   }
 }
 
-registerLocales()
+function getSettingsLangBundle() {
+  const key = settings.value.general.lang
+  if (!key) return getDefaultLangBundle()
+  return bundles[key]
+}
+
+function getDefaultLangBundle() {
+  return bundles["EnUs"]
+}
+
+watch(
+  () => settings.value.general.lang,
+  () => {
+    i18n.bundles = [getSettingsLangBundle(), getDefaultLangBundle()]
+  },
+)
 
 export const i18n = createFluentVue({
-  bundles: bundles,
+  bundles: [getSettingsLangBundle(), getDefaultLangBundle()],
 })

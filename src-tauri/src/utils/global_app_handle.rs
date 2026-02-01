@@ -1,4 +1,5 @@
 use anyhow::{Result, anyhow};
+use log::error;
 use std::sync::OnceLock;
 use tap::Pipe;
 use tauri::{App, AppHandle};
@@ -12,10 +13,9 @@ pub fn set_global_app_handle(app: &mut App) -> Result<()> {
     Ok(())
 }
 
-pub fn get_global_app_handle() -> Result<AppHandle> {
+pub fn get_global_app_handle() -> AppHandle {
     GLOBAL_APP_HANDLE
         .get()
-        .ok_or_else(|| anyhow!("no global app handle"))?
+        .expect("Internal Error: Global app handle not set") // this should never happen
         .clone()
-        .pipe(Ok)
 }

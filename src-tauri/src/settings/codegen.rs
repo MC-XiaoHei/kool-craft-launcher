@@ -1,3 +1,5 @@
+#![cfg_attr(coverage_nightly, coverage(off))]
+
 use crate::utils::codegen::indent_all;
 use indoc::formatdoc;
 use macros::inventory;
@@ -34,7 +36,7 @@ impl SettingsGroupInfo {
 pub fn generate_settings_type_def() -> String {
     let elements = inventory::iter::<SettingsGroupInfo>
         .into_iter()
-        .map(|x| x.to_type_element())
+        .map(SettingsGroupInfo::to_type_element)
         .collect::<Vec<_>>()
         .join("; ");
     format!("export type SettingsModule = {{ {elements} }}")
@@ -43,7 +45,7 @@ pub fn generate_settings_type_def() -> String {
 pub fn generate_settings_watcher() -> String {
     let elements = inventory::iter::<SettingsGroupInfo>
         .into_iter()
-        .map(|x| x.to_watch_function())
+        .map(SettingsGroupInfo::to_watch_function)
         .map(|x| indent_all(x, 2))
         .collect::<Vec<_>>()
         .join("\n");
