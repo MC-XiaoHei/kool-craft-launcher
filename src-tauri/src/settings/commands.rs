@@ -1,7 +1,7 @@
+use crate::constants::file_system::SETTINGS_FILE_NAME;
 use crate::settings::modules::theme::ThemeSettings;
 use crate::settings::persistence::FilePersistence;
 use crate::settings::store::SettingsStore;
-use crate::constants::file_system::SETTINGS_FILE_NAME;
 use crate::utils::command::CommandResult;
 use crate::utils::dirs::app_dir;
 use anyhow::{Result, anyhow};
@@ -75,7 +75,9 @@ pub async fn get_settings_values_json(
         .iter()
         .map(|(key, value)| {
             let value_json = serde_json::to_string(value)
-                .map_err(|e| warn!("Fail to serialize settings value with key {key} to json: {e:?}"))
+                .map_err(|e| {
+                    warn!("Fail to serialize settings value with key {key} to json: {e:?}")
+                })
                 .unwrap_or("{}".to_string());
             (key.clone(), value_json)
         })

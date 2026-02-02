@@ -7,9 +7,9 @@ export const settingsSchema = ref(await getSettingsSchemas())
 
 export type SettingsSchema = Record<string, SettingsGroupSchema>
 export type SettingsGroupSchema = JSONSchema7 & {
-  component?: string;
-  properties?: { [key: string]: SettingsGroupSchema };
-};
+  component?: string
+  properties?: { [key: string]: SettingsGroupSchema }
+}
 
 async function getSettingsSchemas(): Promise<SettingsSchema> {
   const rawData = await invokeGetSettingsSchemas()

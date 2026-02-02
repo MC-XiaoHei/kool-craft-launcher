@@ -123,10 +123,7 @@ struct OAuthTokenResponse {
     expires_in: u64,
 }
 
-async fn get_microsoft_token_by_code(
-    client: Client,
-    code: String,
-) -> Result<MicrosoftToken> {
+async fn get_microsoft_token_by_code(client: Client, code: String) -> Result<MicrosoftToken> {
     let params = [
         ("client_id", CLIENT_ID),
         ("code", code.as_str()),

@@ -9,7 +9,15 @@ pub fn settings_type_impl(_args: TokenStream, input: TokenStream) -> TokenStream
 
     let is_struct = matches!(input_item, Item::Struct(_));
 
-    let serde_attribute = if is_struct {
+    let proc_macros = if is_struct {
+        quote! {
+            #[macros::inject_args]
+        }
+    } else {
+        quote! {}
+    };
+
+    let attributes = if is_struct {
         quote! {
             #[serde(rename_all = "camelCase")]
             #[serde(default)]
@@ -19,6 +27,7 @@ pub fn settings_type_impl(_args: TokenStream, input: TokenStream) -> TokenStream
     };
 
     let expanded = quote_spanned! { span =>
+        #proc_macros
         #[derive(
             Default,
             std::fmt::Debug,
@@ -28,7 +37,7 @@ pub fn settings_type_impl(_args: TokenStream, input: TokenStream) -> TokenStream
             schemars::JsonSchema,
             specta::Type
         )]
-        #serde_attribute
+        #attributes
         #input_item
     };
 

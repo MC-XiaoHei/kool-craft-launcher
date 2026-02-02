@@ -1,11 +1,12 @@
+use crate::settings::components::Password;
 use crate::settings::traits::SettingsGroup;
 use crate::theme::effect::apply_effect;
 use crate::utils::global_app_handle::get_global_app_handle;
 use anyhow::Result;
 use log::{info, warn};
 use macros::{settings, settings_type};
+use schemars::Schema;
 use tauri::Manager;
-use crate::settings::components::Password;
 
 #[settings(name = "theme", post_process = post_process, update_handler = on_update, no_default)]
 pub struct ThemeSettings {

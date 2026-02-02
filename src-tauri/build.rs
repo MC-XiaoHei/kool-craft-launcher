@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use heck::ToPascalCase;
-use i18n_parser::{get_supported_locales, get_translate_keys, resolve_all_ftl_files, DEFAULT_LANG};
+use i18n_parser::{DEFAULT_LANG, get_supported_locales, get_translate_keys, resolve_all_ftl_files};
 use indoc::formatdoc;
 use std::path::Path;
 use std::path::PathBuf;

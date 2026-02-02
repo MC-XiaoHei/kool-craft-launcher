@@ -1,8 +1,8 @@
-use std::cmp::PartialEq;
-use crate::settings::modules::theme::{ThemeSettings, ThemeEffect};
+use crate::settings::modules::theme::{ThemeEffect, ThemeSettings};
 use crate::utils::os_info::{is_macos, is_windows};
 use log::warn;
 use os_info::Info;
+use std::cmp::PartialEq;
 
 impl ThemeEffect {
     pub fn sanitize(&mut self, os_info: &Info) {

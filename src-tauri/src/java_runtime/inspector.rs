@@ -45,7 +45,6 @@ async fn execute_java_version_command(path: PathBuf) -> Result<String> {
 }
 
 fn parse_java_info(path: PathBuf, output: String) -> Result<JavaInstance> {
-
     let version_str = extract_raw_version(output.clone())?;
     let major_version = parse_major_version(version_str.clone())?;
     let arch = determine_architecture(output.clone());

@@ -1,5 +1,5 @@
-use crate::settings::store::SettingsStore;
 use crate::scheduler::Scheduler;
+use crate::settings::store::SettingsStore;
 use std::sync::Arc;
 use tauri::{App, Manager};
 

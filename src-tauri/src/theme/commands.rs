@@ -1,4 +1,4 @@
-use crate::settings::modules::theme::{ThemeSettings, ThemeEffect};
+use crate::settings::modules::theme::{ThemeEffect, ThemeSettings};
 use crate::settings::store::SettingsStore;
 use crate::theme::effect::apply_effect;
 use crate::utils::command::CommandResult;

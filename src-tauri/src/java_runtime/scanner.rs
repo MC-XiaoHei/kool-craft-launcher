@@ -11,7 +11,8 @@ use tokio::fs::read_dir;
 const INSPECT_JAVA_CONCURRENCY: usize = 16;
 
 pub async fn scan_all() -> Vec<JavaInstance> {
-    candidate_paths().await
+    candidate_paths()
+        .await
         .pipe(stream::iter)
         .map(to_java_executable)
         .buffer_unordered(INSPECT_JAVA_CONCURRENCY)

@@ -50,15 +50,17 @@ impl SettingsArgs {
             .ok_or_else(|| syn::Error::new_spanned(&item.ident, "Missing 'name'"))?;
 
         let ide_helper = self.generate_ide_helper(&item.ident, name_lit, *name_span);
+        let proc_macros = self.generate_proc_macros();
         let derives = self.generate_derives();
-        let properties = self.generate_properties();
+        let attributes = self.generate_attributes();
         let trait_impl = self.generate_trait_impl(item, name_lit)?;
         let inventory = self.generate_inventory_submit(&item.ident, name_lit);
 
         Ok(quote! {
             #ide_helper
+            #proc_macros
             #derives
-            #properties
+            #attributes
             #item
             #trait_impl
             #inventory
@@ -84,7 +86,13 @@ impl SettingsArgs {
         }
     }
 
-    fn generate_properties(&self) -> proc_macro2::TokenStream {
+    fn generate_proc_macros(&self) -> proc_macro2::TokenStream {
+        quote! {
+            #[macros::inject_args]
+        }
+    }
+
+    fn generate_attributes(&self) -> proc_macro2::TokenStream {
         quote! {
             #[serde(rename_all = "camelCase")]
             #[serde(default)]

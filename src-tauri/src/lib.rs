@@ -2,7 +2,6 @@
 #![cfg_attr(debug_assertions, allow(unused))]
 
 mod auth;
-mod settings;
 mod constants;
 mod game_assets;
 mod game_launcher;
@@ -11,13 +10,14 @@ mod i18n;
 mod ipc;
 mod java_runtime;
 mod scheduler;
+mod settings;
 mod theme;
 pub mod utils;
 
-use crate::settings::commands::setup_settings;
 use crate::constants::file_system::LOG_DIR_NAME;
 use crate::ipc::command::command_handler;
 use crate::scheduler::commands::setup_scheduler;
+use crate::settings::commands::setup_settings;
 use crate::theme::commands::setup_theme;
 use crate::utils::dirs::app_dir;
 use crate::utils::global_app_handle::set_global_app_handle;
