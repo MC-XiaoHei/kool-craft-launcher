@@ -10,6 +10,7 @@ use i18n_parser::DEFAULT_LANG;
 use log::info;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::sync::{Arc, OnceLock, RwLock};
 use strum::IntoEnumIterator;

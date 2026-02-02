@@ -28,6 +28,7 @@ pub trait SettingsGroup:
 #[async_trait]
 pub trait SettingsPersistence: Send + Sync {
     async fn load(&self) -> Result<Option<String>>;
+    async fn backup(&self) -> Result<()>;
     async fn save(&self, content: String) -> Result<()>;
     fn source_description(&self) -> String;
 }

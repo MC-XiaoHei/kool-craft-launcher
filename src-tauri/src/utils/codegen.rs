@@ -3,7 +3,7 @@
 use crate::i18n::codegen::generate_i18n_keys_def;
 use crate::ipc::command::generate_command_invokers;
 use crate::ipc::event::generate_event_functions;
-use crate::settings::codegen::{generate_settings_type_def, generate_settings_watcher};
+use crate::settings::codegen::generate_settings_type_def;
 use anyhow::{Context, Result};
 use specta::datatype::{FunctionResultVariant, PrimitiveType};
 use specta::{DataType, TypeCollection};
@@ -18,7 +18,6 @@ pub fn do_codegen() -> Result<()> {
 
     let mut types = specta::export();
     gen_types(&types)?;
-    gen_settings_watcher()?;
     gen_command_invokers(&mut types)?;
     gen_event_functions(&types)?;
 
@@ -49,12 +48,6 @@ fn gen_types(types: &TypeCollection) -> Result<()> {
     writeln!(file, "{}\n", generate_i18n_keys_def()?)?;
 
     Ok(())
-}
-
-fn gen_settings_watcher() -> Result<()> {
-    const PATH: &str = "../src/bindings/settings.ts";
-    let content = generate_settings_watcher();
-    fs::write(PATH, content).context("Failed to write settings to file")
 }
 
 fn gen_command_invokers(types: &mut TypeCollection) -> Result<()> {

@@ -1,8 +1,9 @@
 use crate::settings::traits::SettingsPersistence;
 use anyhow::Context;
+use anyhow::Result;
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tokio::fs::{File, create_dir_all, read_to_string, remove_file, rename};
+use tokio::fs::{File, create_dir_all, read_to_string, remove_file, rename, copy};
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 
@@ -15,7 +16,11 @@ impl FilePersistence {
         Self { path }
     }
 
-    async fn atomic_write(&self, content: String) -> anyhow::Result<()> {
+    fn backup_path(&self) -> PathBuf {
+        self.path.with_extension("backup")
+    }
+
+    async fn atomic_write(&self, content: String) -> Result<()> {
         let parent = self
             .path
             .parent()
@@ -55,7 +60,7 @@ impl FilePersistence {
 
 #[async_trait]
 impl SettingsPersistence for FilePersistence {
-    async fn load(&self) -> anyhow::Result<Option<String>> {
+    async fn load(&self) -> Result<Option<String>> {
         match read_to_string(&self.path).await {
             Ok(content) => Ok(Some(content)),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
@@ -63,7 +68,12 @@ impl SettingsPersistence for FilePersistence {
         }
     }
 
-    async fn save(&self, content: String) -> anyhow::Result<()> {
+    async fn backup(&self) -> Result<()> {
+        copy(&self.path, &self.backup_path()).await?;
+        Ok(())
+    }
+
+    async fn save(&self, content: String) -> Result<()> {
         self.atomic_write(content).await
     }
 

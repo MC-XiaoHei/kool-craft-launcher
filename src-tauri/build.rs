@@ -67,7 +67,7 @@ fn generate_locales_def() -> Result<String> {
         use macros::settings_type;
 
         #[allow(dead_code)]
-        #[derive(strum::IntoStaticStr, strum::EnumIter, strum::EnumString, Copy)]
+        #[derive(strum::IntoStaticStr, strum::EnumIter, strum::EnumString, Copy, Eq, PartialEq)]
         #[settings_type]
         pub enum Locales {{
         {elements}

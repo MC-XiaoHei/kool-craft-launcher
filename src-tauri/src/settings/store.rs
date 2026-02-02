@@ -49,6 +49,10 @@ impl SettingsStore {
     pub async fn load(&self) -> Result<()> {
         let _guard = self.write_lock.lock().await;
         let source = self.persistence.source_description();
+        self.persistence
+            .backup()
+            .await
+            .context("Failed to backup settings")?;
         if let Some(content) = self.persistence.load().await? {
             let data = self.try_parse_json(&content)?;
             *self.values.write() = data;
@@ -66,7 +70,8 @@ impl SettingsStore {
         self.update_atomic::<T, _>(|original| {
             original.post_process();
             Ok(true)
-        }).await?;
+        })
+        .await?;
         Ok(())
     }
 
@@ -101,19 +106,22 @@ impl SettingsStore {
             let mut settings: T = serde_json::from_value(json_value.clone()).unwrap_or_default();
 
             if func(&mut settings)? {
-                *json_value = serde_json::to_value(settings).context("Settings serialization failed")?;
+                *json_value =
+                    serde_json::to_value(settings).context("Settings serialization failed")?;
                 Ok(true)
             } else {
                 Ok(false)
             }
-        }).await
+        })
+        .await
     }
 
     async fn update(&self, key: &str, value: Value) -> Result<()> {
         self.mutate_state(key, |json_value| {
             *json_value = value.clone();
             Ok(true)
-        }).await
+        })
+        .await
     }
 
     async fn mutate_state<F>(&self, key: &str, func: F) -> Result<()>
@@ -142,9 +150,13 @@ impl SettingsStore {
         }
 
         if should_save {
-            self.save_inner().await.context("Failed to persist settings")?;
+            self.save_inner()
+                .await
+                .context("Failed to persist settings")?;
 
-            if old_value != Null && let Some(handler) = Self::find_update_handler(key) {
+            if old_value != Null
+                && let Some(handler) = Self::find_update_handler(key)
+            {
                 handler(new_value.clone(), old_value)?;
             }
 

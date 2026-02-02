@@ -1,30 +1,11 @@
-import { watchSettingsStore } from "@/bindings/settings"
-import { nextTick, ref } from "vue"
-import {
-  getSettingsValuesJson,
-  setSettings as invokeSetSettings,
-} from "@/bindings/commands"
+import { ref, toRaw, watch } from "vue"
+import { getSettingsValuesJson, setSettings as invokeSetSettings } from "@/bindings/commands"
 import { listenSettingsUpdateEvent } from "@/bindings/events"
 import { SettingsModule } from "@/bindings/types"
 
 export const settings = ref<SettingsModule>(await getSettings())
-let watchingSettingsStore = false
 
-export function pauseWatchSettingsStore() {
-  watchingSettingsStore = false
-}
-
-export function resumeWatchSettingsStore() {
-  watchingSettingsStore = true
-}
-
-// noinspection JSUnusedGlobalSymbols
-export function isWatchingSettingsStore(): boolean {
-  return watchingSettingsStore
-}
-
-// noinspection JSUnusedGlobalSymbols
-export async function setSettings<T>(key: string, value: T): Promise<void> {
+async function setSettings<T>(key: string, value: T): Promise<void> {
   const json = JSON.stringify(value)
   await invokeSetSettings(key, json)
 }
@@ -37,12 +18,23 @@ async function getSettings(): Promise<SettingsModule> {
 
 await listenSettingsUpdateEvent(async event => {
   const { key, value } = event
-  const entry = JSON.parse(value)
-  pauseWatchSettingsStore()
-  // @ts-ignore
-  settings.value[key] = entry
-  await nextTick()
-  resumeWatchSettingsStore()
+
+  const safeKey = key as keyof typeof settings.value
+
+  const currentLocalValue = settings.value[safeKey]
+  const currentLocalJson = JSON.stringify(toRaw(currentLocalValue))
+
+  if (currentLocalJson !== value) {
+    settings.value[safeKey] = JSON.parse(value)
+  }
 })
 
-watchSettingsStore()
+for (const key of Object.keys(settings.value) as Array<keyof typeof settings.value>) {
+  watch(
+    () => settings.value[key],
+    async newVal => {
+      await setSettings(key, newVal).then().catch(console.error)
+    },
+    { deep: true },
+  )
+}
