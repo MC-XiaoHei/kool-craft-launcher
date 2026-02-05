@@ -8,6 +8,7 @@ export const settingsSchema = ref(await getSettingsSchemas())
 export type SettingsSchema = Record<string, SettingsGroupSchema>
 export type SettingsGroupSchema = JSONSchema7 & {
   component?: string
+  args?: any
   properties?: { [key: string]: SettingsGroupSchema }
 }
 
