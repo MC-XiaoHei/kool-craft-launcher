@@ -7,15 +7,16 @@ use crate::utils::global_app_handle::get_global_app_handle;
 use anyhow::Result;
 use log::info;
 use macros::settings;
+use crate::settings::components::Language;
 
 #[settings(name = "general", post_process = post_process, update_handler = on_update)]
 pub struct GeneralSettings {
-    pub lang: Option<Locales>,
+    pub lang: Language,
 }
 
 fn post_process(settings: &mut GeneralSettings) -> Result<()> {
     if settings.lang.is_none() {
-        settings.lang = Some(get_system_locale_or_default());
+        settings.lang = Language::some(get_system_locale_or_default());
     }
     Ok(())
 }

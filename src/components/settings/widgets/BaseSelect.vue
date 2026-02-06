@@ -8,31 +8,31 @@
     SelectValue,
   } from "@/components/ui/select"
   import type { JSONSchema7 } from "json-schema"
-  import { AcceptableValue } from "reka-ui"
 
   const props = defineProps<{
-    modelValue: any
     schema: JSONSchema7
     placeholder?: string
   }>()
 
-  const emit = defineEmits(["update:modelValue"])
+  const modelValue = defineModel<any>({
+    get(val) {
+      return val === undefined || val === null ? "" : String(val)
+    },
+    set(val) {
+      return val
+    },
+  })
 
   const options = computed(() => {
-    const enums = props.schema.enum || []
-    return enums.map(val => ({
+    return (props.schema.enum || []).map(val => ({
       label: String(val),
       value: String(val),
     }))
   })
-
-  const onUpdate = (val: AcceptableValue) => {
-    emit("update:modelValue", val)
-  }
 </script>
 
 <template>
-  <Select :model-value="String(modelValue)" @update:model-value="onUpdate">
+  <Select v-model="modelValue">
     <SelectTrigger class="w-full">
       <SelectValue :placeholder="placeholder || String(schema.default || 'Select...')" />
     </SelectTrigger>

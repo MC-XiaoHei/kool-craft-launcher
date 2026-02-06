@@ -1,4 +1,4 @@
-use crate::settings::components::Password;
+use crate::settings::components::{Color, Password};
 use crate::settings::traits::SettingsGroup;
 use crate::theme::effect::apply_effect;
 use crate::utils::global_app_handle::get_global_app_handle;
@@ -12,7 +12,8 @@ use tauri::Manager;
 pub struct ThemeSettings {
     pub effect: ThemeEffect,
     pub mode: ThemeMode,
-    pub primary_hex: String,
+    pub primary_hex: Color,
+    pub test: bool,
 }
 
 const DEFAULT_PRIMARY_HEX: &str = "#01ca8a";
@@ -22,7 +23,8 @@ impl Default for ThemeSettings {
         Self {
             effect: ThemeEffect::Auto,
             mode: ThemeMode::Auto,
-            primary_hex: DEFAULT_PRIMARY_HEX.into(),
+            primary_hex: DEFAULT_PRIMARY_HEX.to_string().into(),
+            test: true,
         }
     }
 }
@@ -36,7 +38,7 @@ fn post_process(settings: &mut ThemeSettings) -> Result<()> {
 
 fn sanitize_primary_color(settings: &mut ThemeSettings) {
     if settings.primary_hex.is_empty() {
-        settings.primary_hex = DEFAULT_PRIMARY_HEX.into();
+        settings.primary_hex = DEFAULT_PRIMARY_HEX.to_string().into();
         warn!("Primary color is missing, resetting to default ${DEFAULT_PRIMARY_HEX}");
     }
 }

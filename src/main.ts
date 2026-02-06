@@ -1,10 +1,12 @@
 import { createApp } from "vue"
 import { createPinia } from "pinia"
 import App from "./App.vue"
-import "./style.css"
 import router from "@/services/router"
 import { i18n } from "@/services/i18n"
 import { initLogger } from "@/services/log"
+
+import "./style.css"
+import "vue-color/style.css"
 
 await initLogger()
 

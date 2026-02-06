@@ -7,31 +7,17 @@
   const props = defineProps<{
     fieldKey: string
     schema: SettingsGroupSchema
-    modelValue: any
   }>()
 
-  const emit = defineEmits(["update:modelValue"])
-
-  const internalValue = computed({
-    get: () => props.modelValue,
-    set: val => emit("update:modelValue", val),
-  })
+  const modelValue = defineModel<any>()
 
   const targetWidget = computed(() => resolveSettingsComponent(props.schema))
 
-  const targetProps = computed(() => {
-    const baseProps = {
-      id: props.fieldKey,
-      schema: props.schema,
-    }
-
-    const customArgs = props.schema.args || {}
-
-    return {
-      ...baseProps,
-      ...customArgs,
-    }
-  })
+  const widgetProps = computed(() => ({
+    id: props.fieldKey,
+    schema: props.schema,
+    ...(props.schema.args || {}),
+  }))
 </script>
 
 <template>
@@ -50,8 +36,8 @@
     <div class="shrink-0 min-w-50 flex justify-end">
       <component
         :is="targetWidget"
-        v-model="internalValue"
-        v-bind="targetProps"
+        v-model="modelValue"
+        v-bind="widgetProps"
         class="w-full max-w-60"
       />
     </div>
