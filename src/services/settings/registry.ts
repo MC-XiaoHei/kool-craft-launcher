@@ -3,6 +3,7 @@ import BaseInput from "@/components/settings/widgets/BaseInput.vue"
 import BaseSwitch from "@/components/settings/widgets/BaseSwitch.vue"
 import BaseSelect from "@/components/settings/widgets/BaseSelect.vue"
 import ColorPicker from "@/components/settings/widgets/ColorPicker.vue"
+import LanguageSelector from "@/components/settings/widgets/LanguageSelector.vue"
 
 const defaultTypeMap: Record<string, Component> = {
   string: BaseInput,
@@ -12,7 +13,8 @@ const defaultTypeMap: Record<string, Component> = {
 }
 
 const customComponentRegistry: Record<string, Component> = {
-  "color": ColorPicker
+  "color": ColorPicker,
+  "language": LanguageSelector,
 }
 
 export function resolveSettingsComponent(schema: any): Component {

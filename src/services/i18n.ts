@@ -2,7 +2,7 @@ import { FluentBundle, FluentResource } from "@fluent/bundle"
 import { createFluentVue } from "fluent-vue"
 import { settings } from "@/services/settings/value"
 import { watch } from "vue"
-import { Locales } from "@/bindings/types"
+import { I18nKeys, Locales } from "@/bindings/types"
 import { pascalCase } from "change-case"
 
 const modules = import.meta.glob("../../locales/*/*.ftl", {
@@ -61,6 +61,25 @@ watch(
     i18n.bundles = [getSettingsLangBundle(), getDefaultLangBundle()]
   },
 )
+
+export const availableLocales = Object.keys(bundles) as Locales[]
+
+export function t(locale: Locales, key: I18nKeys, args?: Record<string, any>): string {
+  const bundle = bundles[locale]
+
+  if (!bundle) {
+    console.warn(`No bundle found for locale: ${locale}`)
+    return key
+  }
+
+  const message = bundle.getMessage(key)
+
+  if (message && message.value) {
+    return bundle.formatPattern(message.value, args)
+  }
+
+  return key
+}
 
 export const i18n = createFluentVue({
   bundles: [getSettingsLangBundle(), getDefaultLangBundle()],
