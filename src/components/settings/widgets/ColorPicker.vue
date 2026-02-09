@@ -19,7 +19,7 @@
   <div class="w-full relative">
     <Popover>
       <PopoverTrigger as-child>
-        <Button variant="outline"> Select Color</Button>
+        <Button variant="outline">Select Color</Button>
       </PopoverTrigger>
       <PopoverContent as-child>
         <SketchPicker :disableAlpha="hideAlpha" v-model="modelValue" />
