@@ -20,6 +20,7 @@
     <Popover>
       <PopoverTrigger as-child>
         <Button variant="outline" size="icon" class="bg-primary hover:bg-primary" />
+        <!-- TODO: show color instead of primary -->
       </PopoverTrigger>
       <PopoverContent as-child>
         <SketchPicker :disableAlpha="hideAlpha" v-model="modelValue" />
